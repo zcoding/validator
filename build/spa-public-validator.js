@@ -1,4 +1,4 @@
-/* spa-public-validator by zcoding, MIT license, 2015-05-18 version: 0.0.1 */
+/* spa-public-validator by zcoding, MIT license, 2015-05-18 version: 0.1.0 */
 (function(factory) {
   if (typeof define === 'function' && define.cmd) {
     define(function(require, exports, module) {
@@ -29,13 +29,19 @@ function isEmpty(value) {
 
 var objectType = Object.prototype.toString;
 
+var hasOwn = function(p) {
+  return this.hasOwnProperty(p);
+};
+
 var Validator = function() {};
+
+var vprtt = Validator.prototype;
 
 /**
  * 这个方法将会检查是否通过匹配器的验证，当全部通过时返回true，否则返回false
  * @param {String|Array} matchers
  */
-Validator.prototype.check = function(matchers) {};
+vprtt.check = function(matchers) {};
 
 /**
  * 这个方法将会添加一个匹配器到Validator实例
@@ -43,13 +49,13 @@ Validator.prototype.check = function(matchers) {};
  * @param {Function} matcher 匹配函数
  * @return this
  */
-Validator.prototype.add = function(name, matcher) {};
+vprtt.add = function(name, matcher) {};
 
 /**
  * 这个方法将会移除实例中的匹配器
  * @param {String} matcherName
  */
-Validator.prototype.remove = function(matcherName) {};
+vprtt.remove = function(matcherName) {};
 
 function match(type, not) {
   not = not || false;
@@ -91,10 +97,10 @@ var is = Validator.is = {},
 var registerMatcher = function(checkList) {
   for (var i = 0, len = checkList.length; i < len; ++i) {
     var check = checkList[i];
-    if (!is.hasOwnProperty(check)) {
+    if (!hasOwn.call(is, check)) {
       is[check] = match(check);
     }
-    if (!isnt.hasOwnProperty(check)) {
+    if (!hasOwn.call(isnt, check)) {
       isnt[check] = match(check, true);
     }
   }
