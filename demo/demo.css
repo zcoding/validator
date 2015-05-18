@@ -1,0 +1,15 @@
+html, body, div {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Consolas;
+  font-size: 14px;
+  line-height: 1.1em;
+}
+
+.form-group {
+  margin: 10px 0;
+  padding: 0;
+}

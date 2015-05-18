@@ -1,0 +1,29 @@
+{
+  "name": "spa-public-validator",
+  "version": "0.0.1",
+  "description": "spa public validator module",
+  "main": "Gruntfile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zcoding/spa-public-validator.git"
+  },
+  "keywords": [
+    "spa",
+    "validator"
+  ],
+  "author": "zcoding",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zcoding/spa-public-validator/issues"
+  },
+  "homepage": "https://github.com/zcoding/spa-public-validator",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-concat": "^0.5.1",
+    "grunt-contrib-uglify": "^0.9.1",
+    "grunt-contrib-watch": "^0.6.1"
+  }
+}
