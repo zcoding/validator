@@ -1,0 +1,88 @@
+// 如何使用Validator
+
+// 1. 创建一个Validator实例
+var validator = new Validator();
+
+// 2. 添加自定义规则，或者替换默认规则
+validator.add({
+  name: 'specialChar',
+  rule: '[a-zA-Z0-9]+'
+});
+
+validator.add({
+  name: 'notAllEmpty',
+  rule: function(values) { // 需要的规则是：不是全部为空时通过（返回false），全部为空时不通过（返回true）
+    var hasNotEmpty = false;
+    for (var i = 0, len = values.length; i < len; ++i) {
+      if (!Validator.api.empty(values[i])) {
+        hasNotEmpty = true;
+        break;
+      }
+    }
+    return hasNotEmpty;
+  }
+});
+
+// 抽取公共处理函数
+function normalFail(message) {
+  return function() {
+    this.classList.add('error');
+    alert(message);
+  }
+}
+
+// 3. 配置需要验证的规则
+var validationConfig = [
+
+  {
+    field: 'name',
+    rules: [{                            // 两个规则，按先后顺序验证
+      type: 'noEmpty',                  // 验证类型：非空
+      fail: normalFail('名称不能为空')  // 验证失败回调
+    }, {
+      type: 'length:(5,12]',  // 验证类型：长度限制在6到12个字符
+      fail: normalFail('6到12个字符')
+    }]
+  },
+
+  {
+    field: 'password',
+    rules: [{
+      type: 'noEmpty',
+      fail: function(form) {
+        this.classList.add('error');
+        alert('密码不能为空');
+      },
+      before: "name:notEmpty" // 必须先验证名称不能为空
+    }, {
+      type: 'length:[8,20]',
+      fail: function(form) { // fail回调带一个参数form，表示当前的表单;上下文(this)为对应的元素;
+        this.classList.add('error');
+        alert('密码8到20位');
+      }
+    }, {
+      type: 'specialChar', // 自定义的规则，必须先定义后使用，否则会抛出TypeError异常
+      fail: normalFail('密码只能包含英文字母/数字')
+    }]
+  },
+
+  {
+    field: ['email', 'address'],
+    rules: [{
+      type: 'notAllEmpty',
+      fail: function(form) {
+        this.classList.add('error');
+        alert('EMAIL和Address不能同时为空');
+      }
+    }]
+  }
+
+];
+
+// 4. 初始化一个验证器
+var checkMyForm = validator.init(document.getElementById('myForm'), validationConfig);
+
+// TODO:
+// 1. 依赖验证（先验证一个，再验证另一个）
+// 2. 域组验证
+// 3. 提供API，方便写自定义规则
