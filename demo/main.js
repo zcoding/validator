@@ -11,15 +11,15 @@ validator.add({
 
 validator.add({
   name: 'notAllEmpty',
-  rule: function(values) { // 需要的规则是：不是全部为空时通过（返回false），全部为空时不通过（返回true）
-    var hasNotEmpty = false;
+  rule: function(values) { // 需要的规则是：不是全部为空时通过（返回true），全部为空时不通过（返回false）
+    var notAllEmpty = false;
     for (var i = 0, len = values.length; i < len; ++i) {
-      if (!Validator.api.empty(values[i])) {
-        hasNotEmpty = true;
+      if (Validator.is.empty(values[i])) {
+        notAllEmpty = true;
         break;
       }
     }
-    return hasNotEmpty;
+    return notAllEmpty;
   }
 });
 
@@ -36,11 +36,11 @@ var validationConfig = [
 
   {
     field: 'name',
-    rules: [{                            // 两个规则，按先后顺序验证
+    rules: [{                           // 两个规则，按先后顺序验证
       type: 'noEmpty',                  // 验证类型：非空
       fail: normalFail('名称不能为空')  // 验证失败回调
     }, {
-      type: 'length:(5,12]',  // 验证类型：长度限制在6到12个字符
+      type: 'length:(5,12]',            // 验证类型：长度限制在6到12个字符
       fail: normalFail('6到12个字符')
     }]
   },
@@ -52,37 +52,44 @@ var validationConfig = [
       fail: function(form) {
         this.classList.add('error');
         alert('密码不能为空');
-      },
-      before: "name:notEmpty" // 必须先验证名称不能为空
+      }
     }, {
       type: 'length:[8,20]',
-      fail: function(form) { // fail回调带一个参数form，表示当前的表单;上下文(this)为对应的元素;
+      fail: function(form) {            // fail回调带一个参数form，表示当前的表单;上下文(this)为对应的元素;
         this.classList.add('error');
         alert('密码8到20位');
       }
     }, {
-      type: 'specialChar', // 自定义的规则，必须先定义后使用，否则会抛出TypeError异常
+      type: 'specialChar',              // 自定义的规则，必须先定义后使用，否则会抛出TypeError异常
       fail: normalFail('密码只能包含英文字母/数字')
     }]
   },
 
   {
     field: ['email', 'address'],
-    rules: [{
+    rules: {
       type: 'notAllEmpty',
       fail: function(form) {
-        this.classList.add('error');
+        var fields = this;
+        for (var i = 0, len = fields.length; i < len; ++i) {
+          fields[i].classList.add('error');
+        }
         alert('EMAIL和Address不能同时为空');
       }
-    }]
+    }
   }
 
 ];
 
-// 4. 初始化一个验证器
-var checkMyForm = validator.init(document.getElementById('myForm'), validationConfig);
+// 4. 初始化一个表单验证器
+var checkMyForm = validator.createFormValidator(document.getElementById('myForm'), validationConfig);
+
+// 5. 调用.check()方法进行验证
+if (checkMyForm.check()) {
+  // 验证通过时执行
+}
 
 // TODO:
-// 1. 依赖验证（先验证一个，再验证另一个）
+// 1. 条件验证（在某种情况下验证，其它情况下不验证）
 // 2. 域组验证
 // 3. 提供API，方便写自定义规则

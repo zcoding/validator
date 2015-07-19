@@ -4,7 +4,7 @@
   "description": "spa public validator module",
   "main": "Gruntfile.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "gulp test"
   },
   "repository": {
     "type": "git",
@@ -12,7 +12,8 @@
   },
   "keywords": [
     "spa",
-    "validator"
+    "validator",
+    "form"
   ],
   "author": "zcoding",
   "license": "MIT",
