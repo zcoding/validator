@@ -1,5 +1,5 @@
 # spa-public-validator
-validator module
+spa-public-validator是一个无依赖的表单验证模块，使用基于配置的方式进行表单验证。
 
 ##配置表单验证
 ###一个域验证多个规则
@@ -61,3 +61,35 @@ validator module
 + `Validator.not.limit`
 + `Validator.not.number`
 + `Validator.not.yes`
+
+###`Validator.api`
+这个方法在Validator底层添加验证规则
+```javascript
+// 使用回调函数
+Validator.api('is', 'shit', function(value) { // 定义is的同时，同时not也添加了
+  return value && value === 'shit';
+});
+// 使用已有的规则
+Validator.api('is', 'biggerThan5', 'length:(5,]');
+// 使用正则表达式
+Validator.api('is', 'abc', /[abc]+/gi);
+
+// 调用
+// 和内置的验证规则不一样，调用自定义的api，直接使用Validator.is或者Validator.not函数
+Validator.is('shit', 'notShit');  // false
+Validator.not('biggerThan5', 3);  // true
+Validator.is('abc', 'AbCCacB');   // true
+// 注意不要和内置规则同名！否则调用的还是内置规则。
+```
+可不可以在添加一个像内置函数那样调用的规则？（可以，但并不推荐使用，这是为了和内置的规则区分，而且这样可能会覆盖内置规则。）
+```javascript
+Validator.is.something = function(value) {
+  // check...
+};
+Validator.not.something = function(value) {
+  return !Validator.is.something(value);
+}
+```
+
+##不喜欢基于配置的方式？
+如果不喜欢这种基于配置的方法，可以直接使用`Validator.is`或者`Validator.not`这两个API进行验证，这样的好处是更加灵活，以及处理很多其它无法配置的验证规则。

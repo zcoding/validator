@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Validator</title>
-  <link rel="stylesheet" href="demo.css">
+  <link rel="stylesheet" href="/demo.css">
 </head>
 <body>
   <form action="/" method="GET" id="main">
@@ -19,22 +19,7 @@
       <input type="submit" value="save">
     </div>
   </form>
-  <script src="../build/spa-public-validator.js"></script>
-  <script>
-  document.getElementById('main').addEventListener('submit', function(evt) {
-    var validator = new Validator();
-    validator.notMatch = function(ele, name, reason) {
-    };
-    validator.add({
-      'name': ['empty'],
-      'age': ['number', '[20,30)']
-    });
-    if (!validator.check()) {
-      console.log('not pass!');
-    }
-    console.log('%cyeah !', 'background: #333;color: #eee;font-size: 18px;');
-    return false;
-  });
-  </script>
+  <script src="/spa-public-validator.min.js"></script>
+  <script src="/main.js"></script>
 </body>
 </html>

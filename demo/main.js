@@ -1,5 +1,3 @@
-// 如何使用Validator
-
 // 1. 创建一个Validator实例
 var validator = new Validator();
 
@@ -85,11 +83,11 @@ var validationConfig = [
 var checkMyForm = validator.createFormValidator(document.getElementById('myForm'), validationConfig);
 
 // 5. 调用.check()方法进行验证
-if (checkMyForm.check()) {
-  // 验证通过时执行
-}
-
-// TODO:
-// 1. 条件验证（在某种情况下验证，其它情况下不验证）
-// 2. 域组验证
-// 3. 提供API，方便写自定义规则
+document.getElementById('myForm').addEventListener('submit', function(evt) {
+  if (!checkMyForm.check()) {
+    console.log('not pass!');
+    return false;
+  }
+  // 现在可以直接提交或者用ajax提交
+  return false;
+});
