@@ -5,9 +5,9 @@ var vprtt = Validator.prototype;
 
 /**
  * 这个方法将会检查是否通过匹配器的验证，当全部通过时返回true，否则返回false
- * @param {String|Array} matchers
+ * @return {Boolean} pass or not
  */
-vprtt.check = function(matchers) {};
+var checkFn = function() {};
 
 /**
  * 这个方法将会添加一个匹配器到Validator实例
@@ -52,9 +52,9 @@ function match(type, not) {
 
 var checkList = ['empty', 'email', 'url'];
 
-////////// is and isnt api //////////
+////////// is and not api //////////
 var is = Validator.is = {},
-  isnt = Validator.isnt = {};
+  isnt = Validator.not = {};
 
 /**
  * 这个函数用来注册匹配器
@@ -76,6 +76,21 @@ var registerMatcher = function(checkList) {
 registerMatcher(checkList);
 
 // API: 注册一个自定义的匹配器
-Validator.registerMatcher = registerMatcher;
+// Validator.registerMatcher = registerMatcher;
+
+vprtt.createFormValidator = function(form, configuration) {
+  for (var i = 0; i < configuration.length; ++i) {
+    var config = configuration[i];
+    var field = form.querySelectorAll(config.field)[0]; //  only first
+    this.checkList.push({
+      field: field,
+      rules: config.rules
+    });
+  }
+  var self = this;
+  return {
+    check: checkFn.bind(self)
+  }
+};
 
 exports.Validator = Validator;
