@@ -7,7 +7,16 @@ var vprtt = Validator.prototype;
  * 这个方法将会检查是否通过匹配器的验证，当全部通过时返回true，否则返回false
  * @return {Boolean} pass or not
  */
-var checkFn = function() {};
+var checkFn = function() {
+  var checkList = this.checkList;
+  for(var i = 0; i < checkList.length; ++i) {
+    var checker = checkList[i];
+    var field = checker.field;
+    var value = field.value; // HACK:这里不一定是value
+    for (var j = 0; j < checker.rules.length; ++j) {
+    }
+  }
+};
 
 /**
  * 这个方法将会添加一个匹配器到Validator实例
