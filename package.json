@@ -4,7 +4,7 @@
   "description": "spa public validator module",
   "main": "Gruntfile.js",
   "scripts": {
-    "test": "gulp test",
+    "test": "node scripts/test.js",
     "build": "gulp build"
   },
   "repository": {

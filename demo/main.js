@@ -87,7 +87,6 @@ var checkMyForm = validator.createFormValidator(myForm, validationConfig);
 // 5. 调用.check()方法进行验证
 myForm.addEventListener('submit', function(event) {
   event.preventDefault();
-  debugger
   if (!checkMyForm.check()) {
     console.log('not pass!');
     return false;

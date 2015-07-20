@@ -7,7 +7,7 @@ var Validator = function() {};
 var vprtt = Validator.prototype;
 
 /**
- * .add()
+ * @method .add()
  * @param {Object} rules
  * @return this
  */
@@ -16,7 +16,7 @@ vprtt.add = function(rules) {
 };
 
 /**
- * .createFormValidator()
+ * @method .createFormValidator()
  * @param {Element|String} form|selector
  * @param {Object} validations
  */
@@ -42,6 +42,9 @@ var FormValidator = function(formOrSelector, validations) {
   }
   for (var i = 0, len = validations.length; i < len; ++i) {
     var fields = validations[i].field;
+    if (!utils.isArray(fields)) {
+      fields = [fields];
+    }
     var $field = [];
     for (var j = 0; j < fields.length; ++j) {
       $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]);
@@ -75,7 +78,7 @@ FormValidator.prototype.check = function() {
       if (!utils.isFunction(checker)) {
         throw new TypeError('Checker for rule ' + rule.type + ' must be a Function.');
       }
-      var value = utils.getValue($field);
+      var value = utils.getValue($field); // TODO: 这里还要处理多个域共同验证
       if (!checker(value)) {
         rule.fail.call($field, $form);
         pass = false;

@@ -22,8 +22,6 @@ var defaults = {};
 
 var checkers = {};
 
-checkers.notEmpty = function(value) {
-  return value && value !== '';
-}
+checkers.notEmpty = matchers.empty;
 
 defaults.checkers = checkers;
