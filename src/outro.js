@@ -1,2 +1,4 @@
 
+exports.Validator = Validator;
+
 }));

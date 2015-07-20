@@ -1,4 +1,3 @@
-/* spa-public-validator by zcoding, MIT license, 2015-05-18 version: 0.1.0 */
 (function(factory) {
   if (typeof define === 'function' && define.cmd) {
     define(function(require, exports, module) {
@@ -8,6 +7,121 @@
     factory(window)
   }
 }(function(exports) {
+
+var objectType = Object.prototype.toString;
+
+var hasOwn = function(p) {
+  return this.hasOwnProperty(p);
+};
+
+var utils = {};
+
+utils.isArray = function(obj) {
+  return objectType.call(obj) === '[object Array]';
+};
+
+utils.isFunction = function(obj) {
+  return objectType.call(obj) === '[object Function]';
+};
+
+utils.getValue = function(HTMLElement) {
+  if (typeof HTMLElement.value === 'undefined') {
+    return HTMLElement.getAttribute('data-value') || '';
+  } else {
+    return HTMLElement.value;
+  }
+};
+
+/**
+ * @class Validator
+ * @constructor
+ */
+var Validator = function() {};
+
+var vprtt = Validator.prototype;
+
+/**
+ * .add()
+ * @param {Object} rules
+ * @return this
+ */
+vprtt.add = function(rules) {
+  return this;
+};
+
+/**
+ * .createFormValidator()
+ * @param {Element|String} form|selector
+ * @param {Object} validations
+ */
+vprtt.createFormValidator = function(formOrSelector, validations) {
+  return new FormValidator(formOrSelector, validations);
+};
+
+/**
+ * @class FormValidator extends Validator
+ * @constructor
+ * @param {HTMLElement|String} formOrSelector
+ * @param {Object|Array} validations
+ */
+var FormValidator = function(formOrSelector, validations) {
+  if (typeof formOrSelector === 'string') {
+    this.$form = document.querySelectorAll(formOrSelector)[0];
+  } else {
+    this.$form = formOrSelector;
+  }
+  this.validations = [];
+  if (!utils.isArray(validations)) {
+    validations = [validations];
+  }
+  for (var i = 0, len = validations.length; i < len; ++i) {
+    var fields = validations[i].field;
+    var $field = [];
+    for (var j = 0; j < fields.length; ++j) {
+      $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]);
+    }
+    var rules = validations[i].rules;
+    rules = utils.isArray(rules) ? rules : [rules];
+    this.validations.push({
+      $field: $field,
+      rules: rules
+    });
+  }
+}
+
+FormValidator.prototype = new Validator();
+FormValidator.prototype.constructor = FormValidator;
+
+/**
+ * .check()
+ * @return {Boolean} pass or not
+ */
+FormValidator.prototype.check = function() {
+  var $form = this.$form;
+  var validations = this.validations;
+  var pass = true;
+  for (var i = 0, len = validations.length; i < len; ++i) {
+    var $field = validations[i].$field;
+    var rules = validations[i].rules;
+    for (var j = 0; j < rules.length; ++j) {
+      var rule = rules[j];
+      var checker = defaults.checkers[rule.type];
+      if (!utils.isFunction(checker)) {
+        throw new TypeError('Checker for rule ' + rule.type + ' must be a Function.');
+      }
+      var value = utils.getValue($field);
+      if (!checker(value)) {
+        rule.fail.call($field, $form);
+        pass = false;
+        break;
+      }
+    }
+    if (!pass) break;
+  }
+  return pass;
+};
+
+var rules = ['empty', 'length', 'email', 'url', 'yes']; // 内置规则
 
 var matchers = {
   ////////// 正则匹配
@@ -27,90 +141,24 @@ function isEmpty(value) {
   return value === null || typeof value === 'undefined' || value === '';
 }
 
-var objectType = Object.prototype.toString;
+var defaults = {};
 
-var hasOwn = function(p) {
-  return this.hasOwnProperty(p);
-};
+var checkers = {};
 
-var Validator = function() {};
-
-var vprtt = Validator.prototype;
-
-/**
- * 这个方法将会检查是否通过匹配器的验证，当全部通过时返回true，否则返回false
- * @param {String|Array} matchers
- */
-vprtt.check = function(matchers) {};
-
-/**
- * 这个方法将会添加一个匹配器到Validator实例
- * @param {String} name 匹配器名
- * @param {Function} matcher 匹配函数
- * @return this
- */
-vprtt.add = function(name, matcher) {};
-
-/**
- * 这个方法将会移除实例中的匹配器
- * @param {String} matcherName
- */
-vprtt.remove = function(matcherName) {};
-
-function match(type, not) {
-  not = not || false;
-  var matcher = matchers[type];
-  if (typeof matcher === 'undefined') {
-    throw new TypeError('Validator Type `' + type + '` is not support.');
-    return;
-  }
-  var checkFn = null;
-  switch (objectType.call(matcher)) {
-    case '[object Function]':
-      checkFn = function(value) {
-        var result = matcher(value);
-        return not ? !result : result;
-      };
-      break;
-    case '[object RegExp]':
-      checkFn = function(value) {
-        var result = matcher.test(value);
-        return not ? !result : result;
-      };
-      break;
-    default:
-      throw new TypeError('Matcher Type Error.The Matcher must be a RegExp or Function.');
-  }
-  return checkFn;
+checkers.notEmpty = function(value) {
+  return value && value !== '';
 }
 
-var checkList = ['empty', 'email', 'url'];
+defaults.checkers = checkers;
 
-////////// is and isnt api //////////
-var is = Validator.is = {},
-  isnt = Validator.isnt = {};
+var api = {}, _api = {};
 
-/**
- * 这个函数用来注册匹配器
- * @param {Array} checkList 检测列表
- */
-var registerMatcher = function(checkList) {
-  for (var i = 0, len = checkList.length; i < len; ++i) {
-    var check = checkList[i];
-    if (!hasOwn.call(is, check)) {
-      is[check] = match(check);
-    }
-    if (!hasOwn.call(isnt, check)) {
-      isnt[check] = match(check, true);
-    }
-  }
-};
+var rules = ['empty', 'length', 'email', 'url', 'yes'];
 
-// 注册默认的匹配器
-registerMatcher(checkList);
+Validator.is = api;
 
-// API: 注册一个自定义的匹配器
-Validator.registerMatcher = registerMatcher;
+Validator.not = _api;
+
 
 exports.Validator = Validator;
 

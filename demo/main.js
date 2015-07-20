@@ -35,7 +35,7 @@ var validationConfig = [
   {
     field: 'name',
     rules: [{                           // 两个规则，按先后顺序验证
-      type: 'noEmpty',                  // 验证类型：非空
+      type: 'notEmpty',                  // 验证类型：非空
       fail: normalFail('名称不能为空')  // 验证失败回调
     }, {
       type: 'length:(5,12]',            // 验证类型：长度限制在6到12个字符
@@ -46,7 +46,7 @@ var validationConfig = [
   {
     field: 'password',
     rules: [{
-      type: 'noEmpty',
+      type: 'notEmpty',
       fail: function(form) {
         this.classList.add('error');
         alert('密码不能为空');
@@ -79,15 +79,19 @@ var validationConfig = [
 
 ];
 
+var myForm = document.getElementById('myForm');
+
 // 4. 初始化一个表单验证器
-var checkMyForm = validator.createFormValidator(document.getElementById('myForm'), validationConfig);
+var checkMyForm = validator.createFormValidator(myForm, validationConfig);
 
 // 5. 调用.check()方法进行验证
-document.getElementById('myForm').addEventListener('submit', function(evt) {
+myForm.addEventListener('submit', function(event) {
+  event.preventDefault();
+  debugger
   if (!checkMyForm.check()) {
     console.log('not pass!');
     return false;
   }
   // 现在可以直接提交或者用ajax提交
   return false;
-});
+}, false);
