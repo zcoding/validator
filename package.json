@@ -1,6 +1,6 @@
 {
   "name": "spa-public-validator",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "spa public validator module",
   "main": "Gruntfile.js",
   "scripts": {
@@ -27,6 +27,7 @@
     "gulp-concat": "^2.6.0",
     "gulp-rename": "^1.2.2",
     "gulp-sourcemaps": "^1.5.2",
-    "gulp-uglify": "^1.2.0"
+    "gulp-uglify": "^1.2.0",
+    "gulp-zip": "^3.0.2"
   }
 }

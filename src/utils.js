@@ -6,6 +6,11 @@ var hasOwn = function(p) {
 
 var utils = {};
 
+// HACK: 验证的时候，不作trim处理
+utils.trim = function(str) {
+  return str.replace(/^\s+|\s$/g, '');
+};
+
 utils.isArray = function(obj) {
   return utils.type(obj) === utils.TYPE_ARRAY;
 };
@@ -26,7 +31,7 @@ utils.getValue = function(htmlElement) {
  * 解析length规则的参数
  * @param {String} paramString
  * @return {Array} params
- * HACK: 这里的解析可以更复杂，例如，加入对布尔运算的解析
+ * TODO: 这里的解析可以更复杂，例如，加入对布尔运算的解析
  */
 utils.getLengthParams = function(paramString) {
   paramString = paramString[0]; // 暂时只做最简单的解析

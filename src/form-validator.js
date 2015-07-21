@@ -52,6 +52,7 @@ getChecker = function(type) {
   var _params = parts.slice(1);
   switch (type) {
     case 'long':
+    case 'range':
       params = utils.getLengthParams(_params);
       break;
     default:

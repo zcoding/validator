@@ -5,7 +5,7 @@
  * @return {Boolean} is or not
  * HACK: is是一个函数对象，注意属性不能被覆盖
  */
-var is = function(ruleName, testString) {
+var is = function is(ruleName, testString) {
   return is[ruleName](testString);
 };
 
@@ -15,7 +15,7 @@ var is = function(ruleName, testString) {
  * @param {String} testString
  * @return {Boolean} is or not
  */
-var not = function(ruleName, testString) {
+var not = function not(ruleName, testString) {
   return not[ruleName](testString);
 };
 

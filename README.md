@@ -111,3 +111,9 @@ Validator.not.something = function(value) {
 
 ##不喜欢基于配置的方式？
 如果不喜欢这种基于配置的方法，可以直接使用`Validator.is`或者`Validator.not`这两个API进行验证，这样的好处是更加灵活，以及处理很多其它无法配置的验证规则。
+
+##利用API为Validator模块写插件
+一个简单的插件
+```javascript
+```
+利用is.js写复杂的插件

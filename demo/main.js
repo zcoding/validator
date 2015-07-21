@@ -56,7 +56,7 @@ var checkMyForm = new FormValidator(myForm, validationConfig);
 // 2. 添加自定义规则，或者替换默认规则
 checkMyForm.add({
   name: 'specialChar',
-  rule: /[a-zA-Z0-9]+/
+  rule: /^[a-zA-Z0-9]+$/
 });
 
 checkMyForm.add({
@@ -64,7 +64,7 @@ checkMyForm.add({
   rule: function(values) { // 需要的规则是：不是全部为空时通过（返回true），全部为空时不通过（返回false）
     var notAllEmpty = false;
     for (var i = 0, len = values.length; i < len; ++i) {
-      if (Validator.is.empty(values[i])) {
+      if (Validator.not.empty(values[i])) {
         notAllEmpty = true;
         break;
       }
@@ -92,5 +92,6 @@ myForm.addEventListener('submit', function(event) {
     return false;
   }
   // 现在可以直接提交或者用ajax提交
+  alert('全部通过');
   return false;
 }, false);
