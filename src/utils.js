@@ -30,11 +30,10 @@ utils.getValue = function(htmlElement) {
 utils.getChecker = function(type) {
   var parts = type.split(':');
   type = parts[0].replace(/length/i, 'long');
-  var checker = defaults.checkers[type];
+  var checker = defaults.checkers[type]; // TODO: 首先从内建规则中获取，如果内建规则中没有，再从自定义规则中获取
   if (!utils.isFunction(checker)) {
     throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
   }
-  // TODO: 直接把parts作为参数传进去是不行的，参数还没有解析完成，例如length的参数"(5,12]"要解析成参数列表[6, 12]
   var params;
   var _params = parts.slice(1);
   switch (type) {

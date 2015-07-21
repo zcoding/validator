@@ -44,6 +44,24 @@ spa-public-validator是一个无依赖的表单验证模块，使用基于配置
 ###条件验证
 有时候需要在某种条件下验证，在某种情况下不验证
 
+##添加自定义规则
+###`.add()`
+```javascript
+validator.add({
+  name: 'notAllEmpty',
+  rule: function(values) { // 需要的规则是：不是全部为空时通过（返回true），全部为空时不通过（返回false）
+    var notAllEmpty = false;
+    for (var i = 0, len = values.length; i < len; ++i) {
+      if (Validator.is.empty(values[i])) {
+        notAllEmpty = true;
+        break;
+      }
+    }
+    return notAllEmpty;
+  }
+});
+```
+
 ##API
 ###`Validator.is`
 几个内置的验证规则

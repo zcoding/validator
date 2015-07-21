@@ -40,11 +40,10 @@ utils.getValue = function(htmlElement) {
 utils.getChecker = function(type) {
   var parts = type.split(':');
   type = parts[0].replace(/length/i, 'long');
-  var checker = defaults.checkers[type];
+  var checker = defaults.checkers[type]; // TODO: 首先从内建规则中获取，如果内建规则中没有，再从自定义规则中获取
   if (!utils.isFunction(checker)) {
     throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
   }
-  // TODO: 直接把parts作为参数传进去是不行的，参数还没有解析完成，例如length的参数"(5,12]"要解析成参数列表[6, 12]
   var params;
   var _params = parts.slice(1);
   switch (type) {
@@ -114,16 +113,51 @@ utils.TYPE_REGEXP = '[object RegExp]';
  * @constructor
  * @class Validator
  */
-var Validator = function() {};
+var Validator = function() {
+  this.rules = [];
+};
 
 var vprtt = Validator.prototype;
 
 /**
- * @method .add()
+ * @method .add(rules)
+ * 添加自定义规则
+ * 自定义的规则，可以和内建规则同名，但调用时只会使用内建规则。如果要覆盖内建规则，就使用Validator.api（全局覆盖）
+ * HACK: 因为自定义规则是用数组存的，所以也可能重名
  * @param {Object} rules
  * @return this
  */
 vprtt.add = function(rules) {
+  if (utils.isArray(rules)) {
+    this.rules = this.rules.concat(rules);
+  } else {
+    this.rules.push(rules);
+  }
+  return this;
+};
+
+/**
+ * @method .remove(rules)
+ * 移除自定义规则
+ * @param {Array|String} rules
+ * @return this
+ */
+vprtt.remove = function(rules) {
+  if (utils.isArray(rules)) {
+    for (var i = 0, len = rules.length; i < len; ++i) {
+      for (var j = 0; j < this.rules.length; ++j) {
+        if (this.rules[j].name === rules[i]) {
+          this.rules.splice(j, 1);
+        }
+      }
+    }
+  } else {
+    for (var j = 0; j < this.rules.length; ++j) {
+      if (this.rules[j].name === rules) {
+        this.rules.splice(j, 1);
+      }
+    }
+  }
   return this;
 };
 

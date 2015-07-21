@@ -2,16 +2,51 @@
  * @constructor
  * @class Validator
  */
-var Validator = function() {};
+var Validator = function() {
+  this.rules = [];
+};
 
 var vprtt = Validator.prototype;
 
 /**
- * @method .add()
+ * @method .add(rules)
+ * 添加自定义规则
+ * 自定义的规则，可以和内建规则同名，但调用时只会使用内建规则。如果要覆盖内建规则，就使用Validator.api（全局覆盖）
+ * HACK: 因为自定义规则是用数组存的，所以也可能重名
  * @param {Object} rules
  * @return this
  */
 vprtt.add = function(rules) {
+  if (utils.isArray(rules)) {
+    this.rules = this.rules.concat(rules);
+  } else {
+    this.rules.push(rules);
+  }
+  return this;
+};
+
+/**
+ * @method .remove(rules)
+ * 移除自定义规则
+ * @param {Array|String} rules
+ * @return this
+ */
+vprtt.remove = function(rules) {
+  if (utils.isArray(rules)) {
+    for (var i = 0, len = rules.length; i < len; ++i) {
+      for (var j = 0; j < this.rules.length; ++j) {
+        if (this.rules[j].name === rules[i]) {
+          this.rules.splice(j, 1);
+        }
+      }
+    }
+  } else {
+    for (var j = 0; j < this.rules.length; ++j) {
+      if (this.rules[j].name === rules) {
+        this.rules.splice(j, 1);
+      }
+    }
+  }
   return this;
 };
 
