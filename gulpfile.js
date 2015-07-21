@@ -12,6 +12,25 @@ var sourcePath = source.map(function(file) {
   return 'src/' + file + '.js';
 });
 
+// 根据不同的模块规范生成单独的文件（不再在一个文件中判断使用哪种规范）
+var moduleTypes = ['amd', 'cmd', 'commonjs', 'es6'];
+
+moduleTypes.forEach(function(mType) {
+
+  gulp.task('build-' + mType, function() {
+    var srcFiles = ['intro-' + mType].concat(sourcePath);
+    return gulp.src(srcFiles)
+            .pipe(concat('validator-' + mType + '.js', {newLine: '\n'}))
+            .pipe(gulp.dest('build/' + mType))
+            .pipe(sourcemaps.init())
+            .pipe(uglify())
+            .pipe(rename('validator-' + mType + '.min.js'))
+            .pipe(sourcemaps.write('.'))
+            .pipe(gulp.dest('build/' + mType));
+  });
+
+});
+
 gulp.task('build', function() {
 
   return gulp.src(sourcePath)

@@ -5,10 +5,10 @@ var validationConfig = [
     field: 'name',
     rules: [{                           // 两个规则，按先后顺序验证
       type: 'notEmpty',                  // 验证类型：非空
-      fail: normalFail('名称不能为空')  // 验证失败回调
+      fail: normalFail('昵称不能为空')  // 验证失败回调
     }, {
       type: 'length:(5,12]',            // 验证类型：长度限制在6到12个字符
-      fail: normalFail('6到12个字符')
+      fail: normalFail('昵称6到12个中/英文字符')
     }]
   },
 

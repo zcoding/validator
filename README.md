@@ -62,6 +62,52 @@ validator.add({
 });
 ```
 
+##内建规则
+###`notEmpty`
+非空限制
++ `{type: "notEmpty"}`
+
+###`length:(min,max)`
+长度限制
++ `{type: "length:(5, 13)"}`表示6到12个字符
++ `{type: "length:(5, 12]"}`表示6到12个字符
++ `{type: "length:[6, 12]"}`表示6到12个字符
++ `{type: "length:(5,)"}`表示至少6个字符
+
+###`range:(min,max)`
+数值大小限制（使用方法参考`length`）
+
+注意改方法不验证是否为数值类型，即该方法默认用户输入为数值类型，如果不是，会抛出`TypeError`。为了不抛出错误，应该在该验证之前加入数值验证，即先验证其是否为数值，再验证数值是否在范围内
+
+###`number:type`
+类型限制：数值型
++ `{type: "number:int"}`限制为整数型
++ `{type: "number:float"}`限制为浮点型
++ `{type: "number"}`限制为数值型，但不限制整形还是浮点型
+
+###`positive`
+正整数，相当于先验证`number:int`再验证`range:(0,)`
+
+###`negative`
+负整数，相当于先验证`number:int`再验证`range:(,0)`
+
+###`upperCase`
+限制只包含大写英文字符
++ `{type: "upperCase"}`
+
+###`lowerCase`
+限制只包含小写英文字符
++ `{type: "lowerCase"}`
+
+###`email`
+限制为电子邮件格式
++ `{type: "email"}`
+
+###`url`
+限制为url格式
++ `{type: "url"}`
++ `{type: "uri"}`
+
 ##API
 ###`Validator.is`
 几个内置的验证规则
@@ -115,5 +161,7 @@ Validator.not.something = function(value) {
 ##利用API为Validator模块写插件
 一个简单的插件
 ```javascript
+
 ```
-利用is.js写复杂的插件
+
+利用[is.js](http://arasatasaygin.github.io/is.js/)写复杂的插件
