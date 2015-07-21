@@ -2,8 +2,9 @@
  * @constructor
  * @class Validator
  */
-var Validator = function() {
-  this.rules = [];
+var Validator = function(validations) {
+  this.checkers = {};
+  this.validations = [];
 };
 
 var vprtt = Validator.prototype;
@@ -17,13 +18,52 @@ var vprtt = Validator.prototype;
  * @return this
  */
 vprtt.add = function(rules) {
+  function setRule(rule) {
+    switch (utils.type(rule.rule)) {
+      case utils.TYPE_FUNCTION:
+        this.checkers[rule.name] = rule.rule;
+        break;
+      case utils.TYPE_STRING:
+        this.checkers[rule.name] = function() {
+        };
+        break;
+      case utils.TYPE_REGEXP:
+        this.checkers[rule.name] = function(values) {
+          var pass = true;
+          if (utils.isArray(values)) {
+            for (var i = 0, len = values.length; i < len; ++i) {
+              if (!rule.rule.test(values[i])) {
+                pass = false;
+                break;
+              }
+            }
+          } else {
+            if (!rule.rule.test(values)) {
+              pass = false;
+            }
+          }
+          return pass;
+        };
+        break;
+      default:
+        throw new TypeError('Rule type not support.');
+    }
+  }
   if (utils.isArray(rules)) {
-    this.rules = this.rules.concat(rules);
+    for (var i = 0, len = rules.length; i < len; ++i) {
+      setRule.call(this, rules[i]);
+    }
   } else {
-    this.rules.push(rules);
+    setRule.call(this, rules);
   }
   return this;
 };
+
+/**
+ * @method .check()
+ * @return {Boolean} pass or not
+ */
+vprtt.check = function() {};
 
 /**
  * @method .remove(rules)
@@ -32,98 +72,17 @@ vprtt.add = function(rules) {
  * @return this
  */
 vprtt.remove = function(rules) {
+  function removeRule(rule) {
+    if (typeof this.checkers[rule] !== 'undefined') {
+      delete this.checkers[rule];
+    }
+  }
   if (utils.isArray(rules)) {
     for (var i = 0, len = rules.length; i < len; ++i) {
-      for (var j = 0; j < this.rules.length; ++j) {
-        if (this.rules[j].name === rules[i]) {
-          this.rules.splice(j, 1);
-        }
-      }
+      removeRule(rules[i]);
     }
   } else {
-    for (var j = 0; j < this.rules.length; ++j) {
-      if (this.rules[j].name === rules) {
-        this.rules.splice(j, 1);
-      }
-    }
+    removeRule(rules);
   }
   return this;
-};
-
-/**
- * @method .createFormValidator()
- * @param {Element|String} form|selector
- * @param {Object} validations
- */
-vprtt.createFormValidator = function(formOrSelector, validations) {
-  return new FormValidator(formOrSelector, validations);
-};
-
-/**
- * @constructor
- * @class FormValidator
- * @extends Validator
- * @param {HTMLElement|String} formOrSelector
- * @param {Object|Array} validations
- */
-var FormValidator = function(formOrSelector, validations) {
-  if (typeof formOrSelector === 'string') {
-    this.$form = document.querySelectorAll(formOrSelector)[0];
-  } else {
-    this.$form = formOrSelector;
-  }
-  this.validations = [];
-  if (!utils.isArray(validations)) {
-    validations = [validations];
-  }
-  for (var i = 0, len = validations.length; i < len; ++i) {
-    var fields = validations[i].field;
-    if (!utils.isArray(fields)) {
-      fields = [fields];
-    }
-    var $field = [];
-    for (var j = 0; j < fields.length; ++j) {
-      $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]);
-    }
-    var rules = validations[i].rules;
-    rules = utils.isArray(rules) ? rules : [rules];
-    this.validations.push({
-      $field: $field,
-      rules: rules
-    });
-  }
-}
-
-FormValidator.prototype = new Validator();
-FormValidator.prototype.constructor = FormValidator;
-
-/**
- * @method .check()
- * @return {Boolean} pass or not
- */
-FormValidator.prototype.check = function() {
-  var $form = this.$form;
-  var validations = this.validations;
-  var pass = true;
-  for (var i = 0, len = validations.length; i < len; ++i) {
-    var $field = validations[i].$field;
-    var rules = validations[i].rules;
-    for (var j = 0; j < rules.length; ++j) {
-      var rule = rules[j];
-      var checker = utils.getChecker(rule.type);
-      var values  = [];
-      for (var k = 0; k < $field.length; ++k) {
-        values.push(utils.getValue($field[k]));
-      }
-      checker[1].unshift(values);
-      if (!checker[0].apply(null, checker[1])) {
-        var context = $field.length < 2 ? $field[0] : $field;
-        rule.fail.call(context, $form);
-        pass = false;
-        break;
-      }
-    }
-    if (!pass) break;
-  }
-  return pass;
 };

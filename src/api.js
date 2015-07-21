@@ -3,6 +3,7 @@
  * @param {String} ruleName
  * @param {String} testString
  * @return {Boolean} is or not
+ * HACK: is是一个函数对象，注意属性不能被覆盖
  */
 var is = function(ruleName, testString) {
   return is[ruleName](testString);
@@ -29,7 +30,7 @@ Validator.not = not;
  */
 function registAPI(name, callback) {
   if (typeof is[name] !== 'undefined') {
-    console.warn('Warning: current api "' + name + '" will be overwritten.');
+    console.warn('Warning: current api "' + name + '" will be overridden.');
   }
   is[name] = callback;
   not[name] = function(value) {
@@ -40,8 +41,8 @@ function registAPI(name, callback) {
 Validator.not = not;
 
 // 注册内建规则
-for (var i = 0, len = rules.lenght; i < len; ++i) {
-  registAPI(rules[i], defaults.checkers[rules[i]]);
+for (var i = 0, len = defaults.rules.length; i < len; ++i) {
+  registAPI(defaults.rules[i], defaults.checkers[defaults.rules[i]]);
 }
 
 /**

@@ -1,34 +1,3 @@
-// 1. 创建一个Validator实例
-var validator = new Validator();
-
-// 2. 添加自定义规则，或者替换默认规则
-validator.add({
-  name: 'specialChar',
-  rule: '[a-zA-Z0-9]+'
-});
-
-validator.add({
-  name: 'notAllEmpty',
-  rule: function(values) { // 需要的规则是：不是全部为空时通过（返回true），全部为空时不通过（返回false）
-    var notAllEmpty = false;
-    for (var i = 0, len = values.length; i < len; ++i) {
-      if (Validator.is.empty(values[i])) {
-        notAllEmpty = true;
-        break;
-      }
-    }
-    return notAllEmpty;
-  }
-});
-
-// 抽取公共处理函数
-function normalFail(message) {
-  return function() {
-    this.classList.add('error');
-    alert(message);
-  }
-}
-
 // 3. 配置需要验证的规则
 var validationConfig = [
 
@@ -81,8 +50,39 @@ var validationConfig = [
 
 var myForm = document.getElementById('myForm');
 
+// 1. 创建一个Validator实例
+var checkMyForm = new FormValidator(myForm, validationConfig);
+
+// 2. 添加自定义规则，或者替换默认规则
+checkMyForm.add({
+  name: 'specialChar',
+  rule: /[a-zA-Z0-9]+/
+});
+
+checkMyForm.add({
+  name: 'notAllEmpty',
+  rule: function(values) { // 需要的规则是：不是全部为空时通过（返回true），全部为空时不通过（返回false）
+    var notAllEmpty = false;
+    for (var i = 0, len = values.length; i < len; ++i) {
+      if (Validator.is.empty(values[i])) {
+        notAllEmpty = true;
+        break;
+      }
+    }
+    return notAllEmpty;
+  }
+});
+
+// 抽取公共处理函数
+function normalFail(message) {
+  return function() {
+    this.classList.add('error');
+    alert(message);
+  }
+}
+
 // 4. 初始化一个表单验证器
-var checkMyForm = validator.createFormValidator(myForm, validationConfig);
+// var checkMyForm = validator.createFormValidator();
 
 // 5. 调用.check()方法进行验证
 myForm.addEventListener('submit', function(event) {

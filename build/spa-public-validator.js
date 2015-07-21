@@ -33,30 +33,6 @@ utils.getValue = function(htmlElement) {
 };
 
 /**
- * getChecker
- * @param {String} type
- * @return {Array} [checkerFunction, params]
- */
-utils.getChecker = function(type) {
-  var parts = type.split(':');
-  type = parts[0].replace(/length/i, 'long');
-  var checker = defaults.checkers[type]; // TODO: 首先从内建规则中获取，如果内建规则中没有，再从自定义规则中获取
-  if (!utils.isFunction(checker)) {
-    throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
-  }
-  var params;
-  var _params = parts.slice(1);
-  switch (type) {
-    case 'long':
-      params = utils.getLengthParams(_params);
-      break;
-    default:
-      params = _params;
-  }
-  return [checker, params];
-};
-
-/**
  * 解析length规则的参数
  * @param {String} paramString
  * @return {Array} params
@@ -113,8 +89,9 @@ utils.TYPE_REGEXP = '[object RegExp]';
  * @constructor
  * @class Validator
  */
-var Validator = function() {
-  this.rules = [];
+var Validator = function(validations) {
+  this.checkers = {};
+  this.validations = [];
 };
 
 var vprtt = Validator.prototype;
@@ -128,13 +105,52 @@ var vprtt = Validator.prototype;
  * @return this
  */
 vprtt.add = function(rules) {
+  function setRule(rule) {
+    switch (utils.type(rule.rule)) {
+      case utils.TYPE_FUNCTION:
+        this.checkers[rule.name] = rule.rule;
+        break;
+      case utils.TYPE_STRING:
+        this.checkers[rule.name] = function() {
+        };
+        break;
+      case utils.TYPE_REGEXP:
+        this.checkers[rule.name] = function(values) {
+          var pass = true;
+          if (utils.isArray(values)) {
+            for (var i = 0, len = values.length; i < len; ++i) {
+              if (!rule.rule.test(values[i])) {
+                pass = false;
+                break;
+              }
+            }
+          } else {
+            if (!rule.rule.test(values)) {
+              pass = false;
+            }
+          }
+          return pass;
+        };
+        break;
+      default:
+        throw new TypeError('Rule type not support.');
+    }
+  }
   if (utils.isArray(rules)) {
-    this.rules = this.rules.concat(rules);
+    for (var i = 0, len = rules.length; i < len; ++i) {
+      setRule.call(this, rules[i]);
+    }
   } else {
-    this.rules.push(rules);
+    setRule.call(this, rules);
   }
   return this;
 };
+
+/**
+ * @method .check()
+ * @return {Boolean} pass or not
+ */
+vprtt.check = function() {};
 
 /**
  * @method .remove(rules)
@@ -143,31 +159,19 @@ vprtt.add = function(rules) {
  * @return this
  */
 vprtt.remove = function(rules) {
-  if (utils.isArray(rules)) {
-    for (var i = 0, len = rules.length; i < len; ++i) {
-      for (var j = 0; j < this.rules.length; ++j) {
-        if (this.rules[j].name === rules[i]) {
-          this.rules.splice(j, 1);
-        }
-      }
-    }
-  } else {
-    for (var j = 0; j < this.rules.length; ++j) {
-      if (this.rules[j].name === rules) {
-        this.rules.splice(j, 1);
-      }
+  function removeRule(rule) {
+    if (typeof this.checkers[rule] !== 'undefined') {
+      delete this.checkers[rule];
     }
   }
+  if (utils.isArray(rules)) {
+    for (var i = 0, len = rules.length; i < len; ++i) {
+      removeRule(rules[i]);
+    }
+  } else {
+    removeRule(rules);
+  }
   return this;
-};
-
-/**
- * @method .createFormValidator()
- * @param {Element|String} form|selector
- * @param {Object} validations
- */
-vprtt.createFormValidator = function(formOrSelector, validations) {
-  return new FormValidator(formOrSelector, validations);
 };
 
 /**
@@ -209,7 +213,32 @@ FormValidator.prototype = new Validator();
 FormValidator.prototype.constructor = FormValidator;
 
 /**
+ * getChecker
+ * @param {String} type
+ * @return {Array} [checkerFunction, params]
+ */
+getChecker = function(type) {
+  var parts = type.split(':');
+  type = parts[0].replace(/length/i, 'long');
+  var checker = defaults.checkers[type] || this.checkers[type];
+  if (!utils.isFunction(checker)) {
+    throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
+  }
+  var params;
+  var _params = parts.slice(1);
+  switch (type) {
+    case 'long':
+      params = utils.getLengthParams(_params);
+      break;
+    default:
+      params = _params;
+  }
+  return [checker, params];
+};
+
+/**
  * @method .check()
+ * @override Validator.prototype.check()
  * @return {Boolean} pass or not
  */
 FormValidator.prototype.check = function() {
@@ -221,7 +250,7 @@ FormValidator.prototype.check = function() {
     var rules = validations[i].rules;
     for (var j = 0; j < rules.length; ++j) {
       var rule = rules[j];
-      var checker = utils.getChecker(rule.type);
+      var checker = getChecker.call(this, rule.type);
       var values  = [];
       for (var k = 0; k < $field.length; ++k) {
         values.push(utils.getValue($field[k]));
@@ -239,7 +268,9 @@ FormValidator.prototype.check = function() {
   return pass;
 };
 
-var rules = ['empty', 'length', 'email', 'url', 'yes']; // 内置规则
+var defaults = {};
+
+var rules = defaults.rules = ['empty', 'long', 'email', 'url', 'yes']; // 内置规则
 
 var matchers = {
   ////////// 正则匹配
@@ -258,8 +289,6 @@ var matchers = {
 function isEmpty(value) {
   return value === null || typeof value === 'undefined' || value === '';
 }
-
-var defaults = {};
 
 // TODO: checker函数总是接收（唯一）一个字符串数组作为参数
 var checkers = {};
@@ -306,6 +335,7 @@ defaults.checkers = checkers;
  * @param {String} ruleName
  * @param {String} testString
  * @return {Boolean} is or not
+ * HACK: is是一个函数对象，注意属性不能被覆盖
  */
 var is = function(ruleName, testString) {
   return is[ruleName](testString);
@@ -332,7 +362,7 @@ Validator.not = not;
  */
 function registAPI(name, callback) {
   if (typeof is[name] !== 'undefined') {
-    console.warn('Warning: current api "' + name + '" will be overwritten.');
+    console.warn('Warning: current api "' + name + '" will be overridden.');
   }
   is[name] = callback;
   not[name] = function(value) {
@@ -343,8 +373,8 @@ function registAPI(name, callback) {
 Validator.not = not;
 
 // 注册内建规则
-for (var i = 0, len = rules.lenght; i < len; ++i) {
-  registAPI(rules[i], defaults.checkers[rules[i]]);
+for (var i = 0, len = defaults.rules.length; i < len; ++i) {
+  registAPI(defaults.rules[i], defaults.checkers[defaults.rules[i]]);
 }
 
 /**
@@ -403,5 +433,7 @@ Validator.api.list = function() {
 
 
 exports.Validator = Validator;
+
+exports.FormValidator = FormValidator;
 
 }));

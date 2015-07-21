@@ -4,7 +4,7 @@ var sourcemaps = require('gulp-sourcemaps');
 var uglify = require('gulp-uglify');
 var rename = require('gulp-rename');
 
-var source = ['intro', 'utils', 'validator', 'rules', 'api', 'outro'];
+var source = ['intro', 'utils', 'validator', 'form-validator', 'rules', 'api', 'outro'];
 
 var sourcePath = source.map(function(file) {
   return 'src/' + file + '.js';

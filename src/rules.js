@@ -1,4 +1,6 @@
-var rules = ['empty', 'length', 'email', 'url', 'yes']; // 内置规则
+var defaults = {};
+
+var rules = defaults.rules = ['empty', 'long', 'email', 'url', 'yes']; // 内置规则
 
 var matchers = {
   ////////// 正则匹配
@@ -17,8 +19,6 @@ var matchers = {
 function isEmpty(value) {
   return value === null || typeof value === 'undefined' || value === '';
 }
-
-var defaults = {};
 
 // TODO: checker函数总是接收（唯一）一个字符串数组作为参数
 var checkers = {};

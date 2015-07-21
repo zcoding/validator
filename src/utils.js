@@ -23,30 +23,6 @@ utils.getValue = function(htmlElement) {
 };
 
 /**
- * getChecker
- * @param {String} type
- * @return {Array} [checkerFunction, params]
- */
-utils.getChecker = function(type) {
-  var parts = type.split(':');
-  type = parts[0].replace(/length/i, 'long');
-  var checker = defaults.checkers[type]; // TODO: 首先从内建规则中获取，如果内建规则中没有，再从自定义规则中获取
-  if (!utils.isFunction(checker)) {
-    throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
-  }
-  var params;
-  var _params = parts.slice(1);
-  switch (type) {
-    case 'long':
-      params = utils.getLengthParams(_params);
-      break;
-    default:
-      params = _params;
-  }
-  return [checker, params];
-};
-
-/**
  * 解析length规则的参数
  * @param {String} paramString
  * @return {Array} params
