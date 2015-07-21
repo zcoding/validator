@@ -32,18 +32,87 @@ utils.getValue = function(htmlElement) {
   }
 };
 
-utils.type = function(type) {
-  return objectType.call(type);
+/**
+ * getChecker
+ * @param {String} type
+ * @return {Array} [checkerFunction, params]
+ */
+utils.getChecker = function(type) {
+  var parts = type.split(':');
+  type = parts[0].replace(/length/i, 'long');
+  var checker = defaults.checkers[type];
+  if (!utils.isFunction(checker)) {
+    throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
+  }
+  // TODO: 直接把parts作为参数传进去是不行的，参数还没有解析完成，例如length的参数"(5,12]"要解析成参数列表[6, 12]
+  var params;
+  var _params = parts.slice(1);
+  switch (type) {
+    case 'long':
+      params = utils.getLengthParams(_params);
+      break;
+    default:
+      params = _params;
+  }
+  return [checker, params];
 };
 
+/**
+ * 解析length规则的参数
+ * @param {String} paramString
+ * @return {Array} params
+ * HACK: 这里的解析可以更复杂，例如，加入对布尔运算的解析
+ */
+utils.getLengthParams = function(paramString) {
+  paramString = paramString[0]; // 暂时只做最简单的解析
+  var matcher = /\s*([\(\[])\s*(\d+)?\s*,\s*(\d+)?\s*([\)\]])\s*/; // 如果没有最小限制，最小限制为0；如果没有最大限制，最大限制为Infinite
+  var result = paramString.match(matcher);
+  if (result === null) {
+    throw new TypeError('The parameters for length is illegal.');
+  }
+  var min = result[2], max = result[3];
+  if (typeof min === 'undefined') {
+    min = 0;
+  } else if (result[1] === '(') {
+    min = +min+1;
+  } else if (result[1] === '[') {
+    min = +min;
+  } else {
+    throw new TypeError('The parameters for length is illegal.');
+  }
+  if (typeof max === 'undefined') {
+    max = Infinite;
+  } else if (result[4] === ')') {
+    max = +max-1;
+  } else if (result[4] === ']'){
+    max = +max;
+  } else {
+    throw new TypeError('The parameters for length is illegal.');
+  }
+  if (min !== min || max !== max) {
+    throw new TypeError('The parameters for length is illegal.');
+  }
+  return [min, max];
+};
+
+/**
+ * Utils: Get Object Type
+ * @param {Object} obj
+ * @return {String} object type
+ */
+utils.type = function(obj) {
+  return objectType.call(obj);
+};
+
+// Object Type Const String
 utils.TYPE_STRING = '[object String]';
 utils.TYPE_ARRAY = '[object Array]';
 utils.TYPE_FUNCTION = '[object Function]';
 utils.TYPE_REGEXP = '[object RegExp]';
 
 /**
- * @class Validator
  * @constructor
+ * @class Validator
  */
 var Validator = function() {};
 
@@ -68,8 +137,9 @@ vprtt.createFormValidator = function(formOrSelector, validations) {
 };
 
 /**
- * @class FormValidator extends Validator
  * @constructor
+ * @class FormValidator
+ * @extends Validator
  * @param {HTMLElement|String} formOrSelector
  * @param {Object|Array} validations
  */
@@ -105,7 +175,7 @@ FormValidator.prototype = new Validator();
 FormValidator.prototype.constructor = FormValidator;
 
 /**
- * .check()
+ * @method .check()
  * @return {Boolean} pass or not
  */
 FormValidator.prototype.check = function() {
@@ -117,13 +187,15 @@ FormValidator.prototype.check = function() {
     var rules = validations[i].rules;
     for (var j = 0; j < rules.length; ++j) {
       var rule = rules[j];
-      var checker = defaults.checkers[rule.type];
-      if (!utils.isFunction(checker)) {
-        throw new TypeError('Checker for rule ' + rule.type + ' must be a Function.');
+      var checker = utils.getChecker(rule.type);
+      var values  = [];
+      for (var k = 0; k < $field.length; ++k) {
+        values.push(utils.getValue($field[k]));
       }
-      var value = utils.getValue($field); // TODO: 这里还要处理多个域共同验证
-      if (!checker(value)) {
-        rule.fail.call($field, $form);
+      checker[1].unshift(values);
+      if (!checker[0].apply(null, checker[1])) {
+        var context = $field.length < 2 ? $field[0] : $field;
+        rule.fail.call(context, $form);
         pass = false;
         break;
       }
@@ -155,9 +227,43 @@ function isEmpty(value) {
 
 var defaults = {};
 
+// TODO: checker函数总是接收（唯一）一个字符串数组作为参数
 var checkers = {};
 
-checkers.notEmpty = matchers.empty;
+/**
+ * checker: not empty
+ * @param {Array} values
+ * @return {Boolean} yes or no
+ */
+checkers.notEmpty = function(values) {
+  var pass = true;
+  for (var i = 0, len = values.length; i < len; ++i) {
+    if (isEmpty(values[i])) {
+      pass = false;
+      break;
+    }
+  }
+  return pass;
+};
+
+/**
+ * checker: length limit
+ * @param {Array} values
+ * @param {Number} min
+ * @param {Number} max
+ * @return {Boolean} yes or no
+ */
+checkers.long = function(values, min, max) {
+  var pass = true;
+  for (var i = 0, len = values.length; i < len; ++i) {
+    var length = values[i].length;
+    if (length < min || length > max) {
+      pass = false;
+      break;
+    }
+  }
+  return pass;
+};
 
 defaults.checkers = checkers;
 
@@ -202,6 +308,7 @@ function registAPI(name, callback) {
 
 Validator.not = not;
 
+// 注册内建规则
 for (var i = 0, len = rules.lenght; i < len; ++i) {
   registAPI(rules[i], defaults.checkers[rules[i]]);
 }

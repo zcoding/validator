@@ -20,8 +20,42 @@ function isEmpty(value) {
 
 var defaults = {};
 
+// TODO: checker函数总是接收（唯一）一个字符串数组作为参数
 var checkers = {};
 
-checkers.notEmpty = matchers.empty;
+/**
+ * checker: not empty
+ * @param {Array} values
+ * @return {Boolean} yes or no
+ */
+checkers.notEmpty = function(values) {
+  var pass = true;
+  for (var i = 0, len = values.length; i < len; ++i) {
+    if (isEmpty(values[i])) {
+      pass = false;
+      break;
+    }
+  }
+  return pass;
+};
+
+/**
+ * checker: length limit
+ * @param {Array} values
+ * @param {Number} min
+ * @param {Number} max
+ * @return {Boolean} yes or no
+ */
+checkers.long = function(values, min, max) {
+  var pass = true;
+  for (var i = 0, len = values.length; i < len; ++i) {
+    var length = values[i].length;
+    if (length < min || length > max) {
+      pass = false;
+      break;
+    }
+  }
+  return pass;
+};
 
 defaults.checkers = checkers;

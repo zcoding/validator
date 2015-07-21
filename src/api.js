@@ -39,6 +39,7 @@ function registAPI(name, callback) {
 
 Validator.not = not;
 
+// 注册内建规则
 for (var i = 0, len = rules.lenght; i < len; ++i) {
   registAPI(rules[i], defaults.checkers[rules[i]]);
 }

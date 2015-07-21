@@ -1,6 +1,6 @@
 /**
- * @class Validator
  * @constructor
+ * @class Validator
  */
 var Validator = function() {};
 
@@ -25,8 +25,9 @@ vprtt.createFormValidator = function(formOrSelector, validations) {
 };
 
 /**
- * @class FormValidator extends Validator
  * @constructor
+ * @class FormValidator
+ * @extends Validator
  * @param {HTMLElement|String} formOrSelector
  * @param {Object|Array} validations
  */
@@ -62,7 +63,7 @@ FormValidator.prototype = new Validator();
 FormValidator.prototype.constructor = FormValidator;
 
 /**
- * .check()
+ * @method .check()
  * @return {Boolean} pass or not
  */
 FormValidator.prototype.check = function() {
@@ -74,13 +75,15 @@ FormValidator.prototype.check = function() {
     var rules = validations[i].rules;
     for (var j = 0; j < rules.length; ++j) {
       var rule = rules[j];
-      var checker = defaults.checkers[rule.type];
-      if (!utils.isFunction(checker)) {
-        throw new TypeError('Checker for rule ' + rule.type + ' must be a Function.');
+      var checker = utils.getChecker(rule.type);
+      var values  = [];
+      for (var k = 0; k < $field.length; ++k) {
+        values.push(utils.getValue($field[k]));
       }
-      var value = utils.getValue($field); // TODO: 这里还要处理多个域共同验证
-      if (!checker(value)) {
-        rule.fail.call($field, $form);
+      checker[1].unshift(values);
+      if (!checker[0].apply(null, checker[1])) {
+        var context = $field.length < 2 ? $field[0] : $field;
+        rule.fail.call(context, $form);
         pass = false;
         break;
       }
