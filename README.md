@@ -62,6 +62,23 @@ validator.add({
 });
 ```
 
+##Validator VS FormValidator
+FormValidator是Validator的一个子类
+FormValidator重写了`.check`方法，并且支持只有表单才具备的验证条件，例如
+```javascript
+// 假设fieldA是一个checkbox或者radio
+{
+  field: ['fieldA']
+  rule: {
+    type: 'checked',
+    fail: function() {
+      this.classList.add('error');
+      alert('fieldA必须勾选');
+    }
+  }
+}
+```
+
 ##内建规则
 ###`notEmpty`
 非空限制
@@ -156,12 +173,32 @@ Validator.not.something = function(value) {
 ```
 
 ##不喜欢基于配置的方式？
-如果不喜欢这种基于配置的方法，可以直接使用`Validator.is`或者`Validator.not`这两个API进行验证，这样的好处是更加灵活，以及处理很多其它无法配置的验证规则。
+如果不喜欢这种基于配置的方法，可以直接使用`Validator.is`/`Validator.not`/`Validator.api`这三个API进行验证，这样的好处是更加灵活，以及处理很多其它无法配置的验证规则。
 
 ##利用API为Validator模块写插件
-一个简单的插件
+###自定义API
 ```javascript
-
+// 为API新增一个规则，判断是否为浏览器
+Validator.api({
+  browser: /chrome|ie|firfox|opera|safari/i
+});
+// 使用
+var myCheck = new Validator([{
+  field: document.querySelectorAll('.browser')
+  rules: {
+    type: 'browser',
+    fail: function(fields) {
+      fields.forEach(function(field) {
+        field.classList.add('error');
+      });
+      alert("it\'s not a browser.");
+    }
+  }
+}]);
+// 因为是在API层添加的规则，所以对所有的Validator（及其子类）对象都起作用
 ```
-
-利用[is.js](http://arasatasaygin.github.io/is.js/)写复杂的插件
+可以借助其它库，例如[is.js](http://arasatasaygin.github.io/is.js/)，写出更复杂规则的插件
+###扩展Validator类
+```javascript
+var MyValidator = Validator.extend(function() {});
+```

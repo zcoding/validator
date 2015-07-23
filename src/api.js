@@ -3,9 +3,8 @@
  * @param {String} ruleName
  * @param {String} testString
  * @return {Boolean} is or not
- * HACK: is是一个函数对象，注意属性不能被覆盖
  */
-var is = function is(ruleName, testString) {
+var is = Validator.is = function(ruleName, testString) {
   return is[ruleName](testString);
 };
 
@@ -15,16 +14,13 @@ var is = function is(ruleName, testString) {
  * @param {String} testString
  * @return {Boolean} is or not
  */
-var not = function not(ruleName, testString) {
+var not = Validator.not = function(ruleName, testString) {
   return not[ruleName](testString);
 };
 
-Validator.is = is;
-
-Validator.not = not;
-
 /**
  * This helper helps to regist api
+ * 注册is/not的时候，注意不要和属性名重名，为了避免这一情况，只有默认规则注册到is/not，通过.api()注册的其它规则注册到api对象
  * @param {String} name
  * @param {Function} callback
  */
@@ -38,12 +34,12 @@ function registAPI(name, callback) {
   };
 }
 
-Validator.not = not;
-
 // 注册内建规则
 for (var i = 0, len = defaults.rules.length; i < len; ++i) {
   registAPI(defaults.rules[i], defaults.checkers[defaults.rules[i]]);
 }
+
+var api = {};
 
 /**
  * @static Validator.api(type, apiName, checker)
@@ -90,11 +86,4 @@ Validator.api = function(type, apiName, checker) {
   }
   registAPI(apiName, callback);
   return Validator;
-};
-
-/**
- * list all registed api
- */
-Validator.api.list = function() {
-  return rules;
 };

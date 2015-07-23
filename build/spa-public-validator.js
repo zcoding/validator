@@ -87,10 +87,33 @@ utils.TYPE_REGEXP = '[object RegExp]';
 /**
  * @constructor
  * @class Validator
+ * @param {Array|Object} validations
  */
 var Validator = function(validations) {
   this.checkers = {};
+
+  validations = validations || [];
+
   this.validations = [];
+  if (!utils.isArray(validations)) {
+    validations = [validations];
+  }
+  for (var i = 0, len = validations.length; i < len; ++i) {
+    var fields = validations[i].field;
+    if (!utils.isArray(fields)) {
+      fields = [fields];
+    }
+    var $field = [];
+    for (var j = 0; j < fields.length; ++j) {
+      $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]);
+    }
+    var rules = validations[i].rules;
+    rules = utils.isArray(rules) ? rules : [rules];
+    this.validations.push({
+      $field: $field,
+      rules: rules
+    });
+  }
 };
 
 var vprtt = Validator.prototype;
@@ -171,101 +194,6 @@ vprtt.remove = function(rules) {
     removeRule(rules);
   }
   return this;
-};
-
-/**
- * @constructor
- * @class FormValidator
- * @extends Validator
- * @param {HTMLElement|String} formOrSelector
- * @param {Object|Array} validations
- */
-var FormValidator = function(formOrSelector, validations) {
-  if (typeof formOrSelector === 'string') {
-    this.$form = document.querySelectorAll(formOrSelector)[0];
-  } else {
-    this.$form = formOrSelector;
-  }
-  this.validations = [];
-  if (!utils.isArray(validations)) {
-    validations = [validations];
-  }
-  for (var i = 0, len = validations.length; i < len; ++i) {
-    var fields = validations[i].field;
-    if (!utils.isArray(fields)) {
-      fields = [fields];
-    }
-    var $field = [];
-    for (var j = 0; j < fields.length; ++j) {
-      $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]);
-    }
-    var rules = validations[i].rules;
-    rules = utils.isArray(rules) ? rules : [rules];
-    this.validations.push({
-      $field: $field,
-      rules: rules
-    });
-  }
-}
-
-FormValidator.prototype = new Validator();
-FormValidator.prototype.constructor = FormValidator;
-
-/**
- * getChecker
- * @param {String} type
- * @return {Array} [checkerFunction, params]
- */
-getChecker = function(type) {
-  var parts = type.split(':');
-  type = parts[0].replace(/length/i, 'long');
-  var checker = defaults.checkers[type] || this.checkers[type];
-  if (!utils.isFunction(checker)) {
-    throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
-  }
-  var params;
-  var _params = parts.slice(1);
-  switch (type) {
-    case 'long':
-    case 'range':
-      params = utils.getLengthParams(_params);
-      break;
-    default:
-      params = _params;
-  }
-  return [checker, params];
-};
-
-/**
- * @method .check()
- * @override Validator.prototype.check()
- * @return {Boolean} pass or not
- */
-FormValidator.prototype.check = function() {
-  var $form = this.$form;
-  var validations = this.validations;
-  var pass = true;
-  for (var i = 0, len = validations.length; i < len; ++i) {
-    var $field = validations[i].$field;
-    var rules = validations[i].rules;
-    for (var j = 0; j < rules.length; ++j) {
-      var rule = rules[j];
-      var checker = getChecker.call(this, rule.type);
-      var values  = [];
-      for (var k = 0; k < $field.length; ++k) {
-        values.push(utils.getValue($field[k]));
-      }
-      checker[1].unshift(values);
-      if (!checker[0].apply(null, checker[1])) {
-        var context = $field.length < 2 ? $field[0] : $field;
-        rule.fail.call(context, $form);
-        pass = false;
-        break;
-      }
-    }
-    if (!pass) break;
-  }
-  return pass;
 };
 
 var defaults = {};
@@ -425,9 +353,8 @@ function range(values, min, max) {
  * @param {String} ruleName
  * @param {String} testString
  * @return {Boolean} is or not
- * HACK: is是一个函数对象，注意属性不能被覆盖
  */
-var is = function is(ruleName, testString) {
+var is = Validator.is = function(ruleName, testString) {
   return is[ruleName](testString);
 };
 
@@ -437,16 +364,13 @@ var is = function is(ruleName, testString) {
  * @param {String} testString
  * @return {Boolean} is or not
  */
-var not = function not(ruleName, testString) {
+var not = Validator.not = function(ruleName, testString) {
   return not[ruleName](testString);
 };
 
-Validator.is = is;
-
-Validator.not = not;
-
 /**
  * This helper helps to regist api
+ * 注册is/not的时候，注意不要和属性名重名，为了避免这一情况，只有默认规则注册到is/not，通过.api()注册的其它规则注册到api对象
  * @param {String} name
  * @param {Function} callback
  */
@@ -460,12 +384,12 @@ function registAPI(name, callback) {
   };
 }
 
-Validator.not = not;
-
 // 注册内建规则
 for (var i = 0, len = defaults.rules.length; i < len; ++i) {
   registAPI(defaults.rules[i], defaults.checkers[defaults.rules[i]]);
 }
+
+var api = {};
 
 /**
  * @static Validator.api(type, apiName, checker)
@@ -515,10 +439,111 @@ Validator.api = function(type, apiName, checker) {
 };
 
 /**
- * list all registed api
+ * @static Validator.extends()
  */
-Validator.api.list = function() {
-  return rules;
+Validator.extend = function(constructorFunction) {
+
+  constructorFunction.prototype = new Validator();
+  constructorFunction.prototype.constructor = constructorFunction;
+
+  return constructorFunction;
+
+};
+
+/**
+ * @constructor
+ * @class FormValidator
+ * @extends Validator
+ * @param {HTMLElement|String} formOrSelector
+ * @param {Object|Array} validations
+ */
+var FormValidator = Validator.extend(function(formOrSelector, validations) {
+  if (typeof formOrSelector === 'string') {
+    this.$form = document.querySelectorAll(formOrSelector)[0];
+  } else {
+    this.$form = formOrSelector;
+  }
+  this.validations = [];
+  if (!utils.isArray(validations)) {
+    validations = [validations];
+  }
+  for (var i = 0, len = validations.length; i < len; ++i) {
+    var fields = validations[i].field;
+    if (!utils.isArray(fields)) {
+      fields = [fields];
+    }
+    var $field = [];
+    for (var j = 0; j < fields.length; ++j) {
+      $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]);
+    }
+    var rules = validations[i].rules;
+    rules = utils.isArray(rules) ? rules : [rules];
+    this.validations.push({
+      $field: $field,
+      rules: rules
+    });
+  }
+});
+
+/**
+ * getChecker
+ * 从三个地方获取checker：
+ * 1. 先从defaults.checkers中获取，如果没有，就
+ * 2. 从api.checkers中获取，如果没有，就
+ * 3. 从this.checkers中获取，如果没有，就抛出异常
+ * @param {String} type
+ * @return {Array} [checkerFunction, params]
+ */
+function getChecker(type) {
+  var parts = type.split(':');
+  type = parts[0].replace(/length/i, 'long');
+  var checker = defaults.checkers[type] || this.checkers[type];
+  if (!utils.isFunction(checker)) {
+    throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
+  }
+  var params;
+  var _params = parts.slice(1);
+  switch (type) {
+    case 'long':
+    case 'range':
+      params = utils.getLengthParams(_params);
+      break;
+    default:
+      params = _params;
+  }
+  return [checker, params];
+};
+
+/**
+ * @method .check()
+ * @override Validator.prototype.check()
+ * @return {Boolean} pass or not
+ */
+FormValidator.prototype.check = function() {
+  var $form = this.$form;
+  var validations = this.validations;
+  var pass = true;
+  for (var i = 0, len = validations.length; i < len; ++i) {
+    var $field = validations[i].$field;
+    var rules = validations[i].rules;
+    for (var j = 0; j < rules.length; ++j) {
+      var rule = rules[j];
+      var checker = getChecker.call(this, rule.type);
+      var values  = [];
+      for (var k = 0; k < $field.length; ++k) {
+        values.push(utils.getValue($field[k]));
+      }
+      checker[1].unshift(values);
+      if (!checker[0].apply(null, checker[1])) {
+        var context = $field.length < 2 ? $field[0] : $field;
+        rule.fail.call(context, $form);
+        pass = false;
+        break;
+      }
+    }
+    if (!pass) break;
+  }
+  return pass;
 };
 
 

@@ -5,7 +5,7 @@
  * @param {HTMLElement|String} formOrSelector
  * @param {Object|Array} validations
  */
-var FormValidator = function(formOrSelector, validations) {
+var FormValidator = Validator.extend(function(formOrSelector, validations) {
   if (typeof formOrSelector === 'string') {
     this.$form = document.querySelectorAll(formOrSelector)[0];
   } else {
@@ -31,17 +31,18 @@ var FormValidator = function(formOrSelector, validations) {
       rules: rules
     });
   }
-}
-
-FormValidator.prototype = new Validator();
-FormValidator.prototype.constructor = FormValidator;
+});
 
 /**
  * getChecker
+ * 从三个地方获取checker：
+ * 1. 先从defaults.checkers中获取，如果没有，就
+ * 2. 从api.checkers中获取，如果没有，就
+ * 3. 从this.checkers中获取，如果没有，就抛出异常
  * @param {String} type
  * @return {Array} [checkerFunction, params]
  */
-getChecker = function(type) {
+function getChecker(type) {
   var parts = type.split(':');
   type = parts[0].replace(/length/i, 'long');
   var checker = defaults.checkers[type] || this.checkers[type];

@@ -1,10 +1,33 @@
 /**
  * @constructor
  * @class Validator
+ * @param {Array|Object} validations
  */
 var Validator = function(validations) {
   this.checkers = {};
+
+  validations = validations || [];
+
   this.validations = [];
+  if (!utils.isArray(validations)) {
+    validations = [validations];
+  }
+  for (var i = 0, len = validations.length; i < len; ++i) {
+    var fields = validations[i].field;
+    if (!utils.isArray(fields)) {
+      fields = [fields];
+    }
+    var $field = [];
+    for (var j = 0; j < fields.length; ++j) {
+      $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]);
+    }
+    var rules = validations[i].rules;
+    rules = utils.isArray(rules) ? rules : [rules];
+    this.validations.push({
+      $field: $field,
+      rules: rules
+    });
+  }
 };
 
 var vprtt = Validator.prototype;
