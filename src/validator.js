@@ -35,8 +35,6 @@ var vprtt = Validator.prototype;
 /**
  * @method .add(rules)
  * 添加自定义规则
- * 自定义的规则，可以和内建规则同名，但调用时只会使用内建规则。如果要覆盖内建规则，就使用Validator.api（全局覆盖）
- * HACK: 因为自定义规则是用数组存的，所以也可能重名
  * @param {Object} rules
  * @return this
  */
@@ -86,7 +84,9 @@ vprtt.add = function(rules) {
  * @method .check()
  * @return {Boolean} pass or not
  */
-vprtt.check = function() {};
+vprtt.check = function() {
+  return this;
+};
 
 /**
  * @method .remove(rules)

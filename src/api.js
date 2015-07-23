@@ -41,6 +41,8 @@ for (var i = 0, len = defaults.rules.length; i < len; ++i) {
 
 var api = {};
 
+api.checkers = {};
+
 /**
  * @static Validator.api(type, apiName, checker)
  * @param {String} type

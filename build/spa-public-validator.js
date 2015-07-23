@@ -121,8 +121,6 @@ var vprtt = Validator.prototype;
 /**
  * @method .add(rules)
  * 添加自定义规则
- * 自定义的规则，可以和内建规则同名，但调用时只会使用内建规则。如果要覆盖内建规则，就使用Validator.api（全局覆盖）
- * HACK: 因为自定义规则是用数组存的，所以也可能重名
  * @param {Object} rules
  * @return this
  */
@@ -172,7 +170,9 @@ vprtt.add = function(rules) {
  * @method .check()
  * @return {Boolean} pass or not
  */
-vprtt.check = function() {};
+vprtt.check = function() {
+  return this;
+};
 
 /**
  * @method .remove(rules)
@@ -391,6 +391,8 @@ for (var i = 0, len = defaults.rules.length; i < len; ++i) {
 
 var api = {};
 
+api.checkers = {};
+
 /**
  * @static Validator.api(type, apiName, checker)
  * @param {String} type
@@ -487,17 +489,14 @@ var FormValidator = Validator.extend(function(formOrSelector, validations) {
 
 /**
  * getChecker
- * 从三个地方获取checker：
- * 1. 先从defaults.checkers中获取，如果没有，就
- * 2. 从api.checkers中获取，如果没有，就
- * 3. 从this.checkers中获取，如果没有，就抛出异常
+ * TODO: 优先级修改为：this.checkers > api.checkers > defaults.checkers
  * @param {String} type
  * @return {Array} [checkerFunction, params]
  */
 function getChecker(type) {
   var parts = type.split(':');
   type = parts[0].replace(/length/i, 'long');
-  var checker = defaults.checkers[type] || this.checkers[type];
+  var checker = this.checkers[type] || api.checkers[type] || defaults.checkers[type];
   if (!utils.isFunction(checker)) {
     throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
   }

@@ -35,17 +35,14 @@ var FormValidator = Validator.extend(function(formOrSelector, validations) {
 
 /**
  * getChecker
- * 从三个地方获取checker：
- * 1. 先从defaults.checkers中获取，如果没有，就
- * 2. 从api.checkers中获取，如果没有，就
- * 3. 从this.checkers中获取，如果没有，就抛出异常
+ * TODO: 优先级修改为：this.checkers > api.checkers > defaults.checkers
  * @param {String} type
  * @return {Array} [checkerFunction, params]
  */
 function getChecker(type) {
   var parts = type.split(':');
   type = parts[0].replace(/length/i, 'long');
-  var checker = defaults.checkers[type] || this.checkers[type];
+  var checker = this.checkers[type] || api.checkers[type] || defaults.checkers[type];
   if (!utils.isFunction(checker)) {
     throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
   }

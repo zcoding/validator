@@ -44,6 +44,24 @@ spa-public-validator是一个无依赖的表单验证模块，使用基于配置
 ###条件验证
 有时候需要在某种条件下验证，在某种情况下不验证
 
+##规则的类型
+优先级： 实例规则 > API规则 > 内建规则
+###内建规则
+内建规则可以直接在配置中使用，但可能被api规则或者实例规则覆盖
+```javascript
+// 配置
+{
+  type: "length:(5,10]"
+  fail: function() { /* todo */ }
+}
+// 配置可能被覆盖，但通过Validator.is/Validator.not可以直接调用而且总是调用内建规则
+Validator.is.long(value, 6, 10); // length规则的内建名称是long
+```
+###API规则
+API规则就是通过Validator.api接口添加的规则
+
+###实例规则（自定义规则）
+
 ##添加自定义规则
 ###`.add()`
 ```javascript
