@@ -43,21 +43,28 @@ var matchers = {
   , range: range
 };
 
-// 注册defaults.checker
-for (var m in matchers) {
-  if (matchers.hasOwnProperty(m))
-  var matcher = matchers[m];
+function registDefaultCheckers(name, matcher) {
+  var callback;
   switch(utils.type(matcher)) {
     case utils.TYPE_REGEXP:
-      defaults.checkers[m] = function(value) {
+      callback = function(value) {
         return matcher.test(value);
       };
       break;
     case utils.TYPE_FUNCTION:
-      defaults.checkers[m] = matcher;
+      callback = matcher;
       break;
     default:
       throw new TypeError('Matcher Type Error.');
+  }
+  defaults.checkers[name] = callback;
+}
+
+// 注册defaults.checker
+// 循环内引用对象的BUG
+for (var m in matchers) {
+  if (matchers.hasOwnProperty(m)) {
+    registDefaultCheckers(m, matchers[m]);
   }
 }
 

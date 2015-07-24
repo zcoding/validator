@@ -33,9 +33,33 @@ var validationConfig = [
   },
 
   {
+    field: ['password', 'password2'],
+    rules: {
+      type: 'equal',
+      fail: function(form) {
+        this.forEach(function(field) {
+          field.classList.add('error');
+        });
+        alert('两次密码不匹配');
+      }
+    }
+  },
+
+  {
+    field: 'email',
+    rules: {
+      type: 'email',
+      fail: function(form) {
+        this.classList.add('error');
+        alert('电子邮件格式错误');
+      }
+    }
+  },
+
+  {
     field: ['email', 'address'],
     rules: {
-      type: 'notAllEmpty',
+      type: '!empty', // HACK: empty的参数是数组，表示所有都不为空，前面加`!``运算符，表示的是并不是所有都不为空（不代表每个都不能为空）
       fail: function(form) {
         var fields = this;
         for (var i = 0, len = fields.length; i < len; ++i) {
@@ -54,24 +78,10 @@ var myForm = document.getElementById('myForm');
 var checkMyForm = new FormValidator(myForm, validationConfig);
 
 // 添加自定义规则
-checkMyForm.add({
+checkMyForm.add([{
   name: 'specialChar',
   rule: /^[a-zA-Z0-9]+$/
-});
-
-checkMyForm.add({
-  name: 'notAllEmpty',
-  rule: function(values) { // 需要的规则是：不是全部为空时通过（返回true），全部为空时不通过（返回false）
-    var notAllEmpty = false;
-    for (var i = 0, len = values.length; i < len; ++i) {
-      if (Validator.not.empty(values[i])) {
-        notAllEmpty = true;
-        break;
-      }
-    }
-    return notAllEmpty;
-  }
-});
+}]);
 
 // 抽取公共处理函数
 function normalFail(message) {

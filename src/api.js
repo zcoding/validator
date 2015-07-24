@@ -30,17 +30,19 @@ var not = Validator.not = function(ruleName, value) {
 };
 
 /**
- * This helper helps to regist default checkers 注册内建规则
+ * This helper helps to regist default checkers into is/not 注册内建规则到is/not
  * 注册is/not的时候，注意不要和属性名重名，为了避免这一情况，只有默认规则注册到is/not，通过.api()注册的其它规则注册到api.checkers对象
  */
-function registDefaultCheckers(name, checker) {
+function registIsNot(name, checker) {
   is[name] = checker;
   not[name] = function(value) {
     return !checker(value);
   };
 }
-for (var i = 0, len = defaults.rules.length; i < len; ++i) {
-  registDefaultCheckers(defaults.rules[i], defaults.checkers[defaults.rules[i]]);
+for (var c in defaults.checkers) {
+  if (defaults.checkers.hasOwnProperty(c)) {
+    registIsNot(c, defaults.checkers[c]);
+  }
 }
 
 var api = {};
