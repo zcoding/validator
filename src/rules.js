@@ -2,7 +2,7 @@ var defaults = {};
 
 // checker函数的第一个参数总是一个数组，这个数组就是待检测的字符串数组
 // 从第二个参数起，每个checker函数带有不同长度的参数列表。例如，empty函数的参数列表长度为0，long函数的参数列表长度为2（暂时，有待改进）
-var checkers = defaults.checkers = {};
+defaults.checkers = {};
 
 var rules = defaults.rules = ['empty', 'long', 'email', 'url', 'yes']; // 内置规则
 
@@ -43,18 +43,18 @@ var matchers = {
   , range: range
 };
 
-// 注册defaults.checker，不公开接口
+// 注册defaults.checker
 for (var m in matchers) {
   if (matchers.hasOwnProperty(m))
   var matcher = matchers[m];
   switch(utils.type(matcher)) {
     case utils.TYPE_REGEXP:
-      checkers[m] = function(value) {
+      defaults.checkers[m] = function(value) {
         return matcher.test(value);
       };
       break;
     case utils.TYPE_FUNCTION:
-      checkers[m] = matcher;
+      defaults.checkers[m] = matcher;
       break;
     default:
       throw new TypeError('Matcher Type Error.');
@@ -88,21 +88,10 @@ function isEqual(values) {
 }
 
 /**
- * checker: not empty
+ * defaults.checkers: empty check
  * @param {Array} values
  * @return {Boolean} yes or no
  */
-checkers.notEmpty = function(values) {
-  var pass = true;
-  for (var i = 0, len = values.length; i < len; ++i) {
-    if (isEmpty(values[i])) {
-      pass = false;
-      break;
-    }
-  }
-  return pass;
-};
-
 function empty(values) {
   var pass = true;
   for (var i = 0, len = values.length; i < len; ++i) {
@@ -115,7 +104,7 @@ function empty(values) {
 };
 
 /**
- * length check
+ * defaults.checkers: length check
  * @param {Array} values
  * @param {Number} min
  * @param {Number} max
@@ -134,7 +123,7 @@ function long(values, min, max) {
 };
 
 /**
- * number range check
+ * defaults.check: number range check
  * 这个函数和long类似，但是不是用来限制长度的，而是用来限制数值本身的
  * TODO:和long不同，min可以是负数甚至是负无穷（未指定时），而且min和max都可以是浮点型
  * @param {Array} values

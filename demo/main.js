@@ -1,10 +1,10 @@
-// 3. 配置需要验证的规则
+// 配置需要验证的规则
 var validationConfig = [
 
   {
     field: 'name',
     rules: [{                           // 两个规则，按先后顺序验证
-      type: 'notEmpty',                  // 验证类型：非空
+      type: '!empty',                  // 验证类型：非空
       fail: normalFail('昵称不能为空')  // 验证失败回调
     }, {
       type: 'length:(5,12]',            // 验证类型：长度限制在6到12个字符
@@ -15,7 +15,7 @@ var validationConfig = [
   {
     field: 'password',
     rules: [{
-      type: 'notEmpty',
+      type: '!empty',
       fail: function(form) {
         this.classList.add('error');
         alert('密码不能为空');
@@ -50,10 +50,10 @@ var validationConfig = [
 
 var myForm = document.getElementById('myForm');
 
-// 1. 创建一个Validator实例
+// 创建一个Validator实例
 var checkMyForm = new FormValidator(myForm, validationConfig);
 
-// 2. 添加自定义规则，或者替换默认规则
+// 添加自定义规则
 checkMyForm.add({
   name: 'specialChar',
   rule: /^[a-zA-Z0-9]+$/
@@ -80,9 +80,6 @@ function normalFail(message) {
     alert(message);
   }
 }
-
-// 4. 初始化一个表单验证器
-// var checkMyForm = validator.createFormValidator();
 
 // 5. 调用.check()方法进行验证
 myForm.addEventListener('submit', function(event) {

@@ -7,7 +7,7 @@
  */
 var FormValidator = Validator.extend(function(formOrSelector, validations) {
   if (typeof formOrSelector === 'string') {
-    this.$form = document.querySelectorAll(formOrSelector)[0];
+    this.$form = document.querySelectorAll(formOrSelector)[0]; // TODO: querySelectorAll兼容性
   } else {
     this.$form = formOrSelector;
   }
@@ -22,7 +22,7 @@ var FormValidator = Validator.extend(function(formOrSelector, validations) {
     }
     var $field = [];
     for (var j = 0; j < fields.length; ++j) {
-      $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]);
+      $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]); // TODO: querySelectorAll兼容性
     }
     var rules = validations[i].rules;
     rules = utils.isArray(rules) ? rules : [rules];
@@ -35,9 +35,10 @@ var FormValidator = Validator.extend(function(formOrSelector, validations) {
 
 /**
  * getChecker
- * TODO: 优先级修改为：this.checkers > api.checkers > defaults.checkers
+ * 优先级：this.checkers > api.checkers > defaults.checkers
  * @param {String} type
  * @return {Array} [checkerFunction, params]
+ * TODO:增加对取反符号`!`的支持
  */
 function getChecker(type) {
   var parts = type.split(':');
@@ -63,6 +64,7 @@ function getChecker(type) {
  * @method .check()
  * @override Validator.prototype.check()
  * @return {Boolean} pass or not
+ * TODO:增加对取反符号`!`的支持
  */
 FormValidator.prototype.check = function() {
   var $form = this.$form;
@@ -73,13 +75,17 @@ FormValidator.prototype.check = function() {
     var rules = validations[i].rules;
     for (var j = 0; j < rules.length; ++j) {
       var rule = rules[j];
-      var checker = getChecker.call(this, rule.type);
+      var not = rule.type[0] === '!';
+      var ruleType = not ? rule.type.slice(1) : rule.type;
+      var checker = getChecker.call(this, ruleType);
       var values  = [];
       for (var k = 0; k < $field.length; ++k) {
         values.push(utils.getValue($field[k]));
       }
       checker[1].unshift(values);
-      if (!checker[0].apply(null, checker[1])) {
+      var result = checker[0].apply(null, checker[1]);
+      if (not && result || !not && !result) {
+
         var context = $field.length < 2 ? $field[0] : $field;
         rule.fail.call(context, $form);
         pass = false;

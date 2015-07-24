@@ -144,8 +144,8 @@ FormValidator重写了`.check`方法，并且支持只有表单才具备的验�
 + `{type: "uri"}`
 
 ##API
-###`Validator.is`
-几个内置的验证规则
+###`Validator.is[type]`
+仅限内置规则的使用
 + `Validator.is.empty`
 + `Validator.is.email`
 + `Validator.is.url`
@@ -153,7 +153,8 @@ FormValidator重写了`.check`方法，并且支持只有表单才具备的验�
 + `Validator.is.number`
 + `Validator.is.yes`
 
-###`Validator.not`
+###`Validator.not[type]`
+仅限内置规则的使用
 + `Validator.not.empty`
 + `Validator.not.email`
 + `Validator.not.url`
@@ -165,22 +166,24 @@ FormValidator重写了`.check`方法，并且支持只有表单才具备的验�
 这个方法在Validator底层添加验证规则
 ```javascript
 // 使用回调函数
-Validator.api('is', 'shit', function(value) { // 定义is的同时，同时not也添加了
-  return value && value === 'shit';
+Validator.api({
+  shit: function(value) {
+    return value && value === 'shit';
+  }
 });
 // 使用已有的规则
-Validator.api('is', 'biggerThan5', 'length:(5,]');
+Validator.api({biggerThan5: 'length:(5,]'});
 // 使用正则表达式
-Validator.api('is', 'abc', /[abc]+/gi);
+Validator.api({abc: /^[abc]+$/i});
 
 // 调用
 // 和内置的验证规则不一样，调用自定义的api，直接使用Validator.is或者Validator.not函数
 Validator.is('shit', 'notShit');  // false
 Validator.not('biggerThan5', 3);  // true
 Validator.is('abc', 'AbCCacB');   // true
-// 注意不要和内置规则同名！否则调用的还是内置规则。
+// Validator.is/Validator.not既可以调用内置规则，也可以调用API规则，但API规则的优先级更高
 ```
-可不可以在添加一个像内置函数那样调用的规则？（可以，但并不推荐使用，这是为了和内置的规则区分，而且这样可能会覆盖内置规则。）
+可不可以在添加一个像内置规则那样调用的规则？（可以，但并不推荐使用，这是为了和内置的规则区分，而且这样会覆盖内置规则。）
 ```javascript
 Validator.is.something = function(value) {
   // check...

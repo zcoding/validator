@@ -200,7 +200,7 @@ var defaults = {};
 
 // checker函数的第一个参数总是一个数组，这个数组就是待检测的字符串数组
 // 从第二个参数起，每个checker函数带有不同长度的参数列表。例如，empty函数的参数列表长度为0，long函数的参数列表长度为2（暂时，有待改进）
-var checkers = defaults.checkers = {};
+defaults.checkers = {};
 
 var rules = defaults.rules = ['empty', 'long', 'email', 'url', 'yes']; // 内置规则
 
@@ -241,18 +241,18 @@ var matchers = {
   , range: range
 };
 
-// 注册defaults.checker，不公开接口
+// 注册defaults.checker
 for (var m in matchers) {
   if (matchers.hasOwnProperty(m))
   var matcher = matchers[m];
   switch(utils.type(matcher)) {
     case utils.TYPE_REGEXP:
-      checkers[m] = function(value) {
+      defaults.checkers[m] = function(value) {
         return matcher.test(value);
       };
       break;
     case utils.TYPE_FUNCTION:
-      checkers[m] = matcher;
+      defaults.checkers[m] = matcher;
       break;
     default:
       throw new TypeError('Matcher Type Error.');
@@ -286,21 +286,10 @@ function isEqual(values) {
 }
 
 /**
- * checker: not empty
+ * defaults.checkers: empty check
  * @param {Array} values
  * @return {Boolean} yes or no
  */
-checkers.notEmpty = function(values) {
-  var pass = true;
-  for (var i = 0, len = values.length; i < len; ++i) {
-    if (isEmpty(values[i])) {
-      pass = false;
-      break;
-    }
-  }
-  return pass;
-};
-
 function empty(values) {
   var pass = true;
   for (var i = 0, len = values.length; i < len; ++i) {
@@ -313,7 +302,7 @@ function empty(values) {
 };
 
 /**
- * length check
+ * defaults.checkers: length check
  * @param {Array} values
  * @param {Number} min
  * @param {Number} max
@@ -332,7 +321,7 @@ function long(values, min, max) {
 };
 
 /**
- * number range check
+ * defaults.check: number range check
  * 这个函数和long类似，但是不是用来限制长度的，而是用来限制数值本身的
  * TODO:和long不同，min可以是负数甚至是负无穷（未指定时），而且min和max都可以是浮点型
  * @param {Array} values
@@ -350,12 +339,17 @@ function range(values, min, max) {
 
 /**
  * @static Validator.is
+ * 优先级： api.checkers > defaults.checkers
  * @param {String} ruleName
- * @param {String} testString
+ * @param {String} value
  * @return {Boolean} is or not
  */
-var is = Validator.is = function(ruleName, testString) {
-  return is[ruleName](testString);
+var is = Validator.is = function(ruleName, value) {
+  var checker = api.checkers[ruleName] || defaults.checkers[ruleName];
+  if (!utils.isFunction(checker)) {
+    throw new TypeError('Checker for ' + ruleName + ' is not defined.');
+  }
+  return checker(value);
 };
 
 /**
@@ -364,29 +358,28 @@ var is = Validator.is = function(ruleName, testString) {
  * @param {String} testString
  * @return {Boolean} is or not
  */
-var not = Validator.not = function(ruleName, testString) {
-  return not[ruleName](testString);
+var not = Validator.not = function(ruleName, value) {
+  var checker = api.checkers[ruleName] || checkers[ruleName];
+  if (!utils.isFunction(checker)) {
+    throw new TypeError('Checker for ' + ruleName + ' is not defined.');
+  }
+  return function(value) {
+    return !checker(value);
+  };
 };
 
 /**
- * This helper helps to regist api
- * 注册is/not的时候，注意不要和属性名重名，为了避免这一情况，只有默认规则注册到is/not，通过.api()注册的其它规则注册到api对象
- * @param {String} name
- * @param {Function} callback
+ * This helper helps to regist default checkers 注册内建规则
+ * 注册is/not的时候，注意不要和属性名重名，为了避免这一情况，只有默认规则注册到is/not，通过.api()注册的其它规则注册到api.checkers对象
  */
-function registAPI(name, callback) {
-  if (typeof is[name] !== 'undefined') {
-    console.warn('Warning: current api "' + name + '" will be overridden.');
-  }
-  is[name] = callback;
+function registDefaultCheckers(name, checker) {
+  is[name] = checker;
   not[name] = function(value) {
-    return !is[name](value);
+    return !checker(value);
   };
 }
-
-// 注册内建规则
 for (var i = 0, len = defaults.rules.length; i < len; ++i) {
-  registAPI(defaults.rules[i], defaults.checkers[defaults.rules[i]]);
+  registDefaultCheckers(defaults.rules[i], defaults.checkers[defaults.rules[i]]);
 }
 
 var api = {};
@@ -395,48 +388,57 @@ api.checkers = {};
 
 /**
  * @static Validator.api(type, apiName, checker)
- * @param {String} type
- * @param {String} apiName
- * @param {String|RegExp|Function} checker
- * checker可以是字符串，正则表达式，或者函数
- * 当checker是字符串时，表示基于内建的规则添加的新规则（其实完全可以用内建规则实现）
- * 当checker是正则表达式时，表示一条通过该正则表达式测试的规则
- * 当checker是函数时，该函数的返回值必须是布尔
- * This function may throw a `TypeError` if checker's type is not support.
+ * TODO: 修改参数列表，只接收一个参数
+ * @param {Array|Object} rules
  * @return Validator
  */
-Validator.api = function(type, apiName, checker) {
-  var _type = utils.type(checker);
-  if (!/is|not/.test(type)) {
-    throw new TypeError('The api type "' + type + '" is not support.');
+Validator.api = function(rules) {
+
+  /**
+   * @param {String} type
+   * @param {String|RegExp|Function} checker
+   * checker可以是字符串，正则表达式，或者函数
+   * 当checker是字符串时，表示基于内建的规则添加的新规则（其实完全可以用内建规则实现）
+   * 当checker是正则表达式时，表示一条通过该正则表达式测试的规则
+   * 当checker是函数时，该函数的返回值必须是布尔
+   * This function may throw a `TypeError` if checker's type is not support.
+   */
+  function registApiChecker(type, checker) {
+    var _type = utils.type(checker);
+    var callback;
+    switch(_type) {
+      case utils.TYPE_STRING:
+        var parts = checker.split(':');
+        var _checker = defaults.checkers[parts[0]];
+        if (typeof _checker === 'undefined') {
+          throw new TypeError('Checker ' + parts[0] + ' is not defined.');
+        }
+        callback = function(value) {
+          return _checker.call(this, parts.slice(1));
+        };
+        break;
+      case utils.TYPE_REGEXP:
+        callback = function(value) {
+          return checker.test(value);
+        }
+        break;
+      case utils.TYPE_FUNCTION:
+        callback = checker;
+        break;
+      default:
+        throw new TypeError('Checker must be a String/RegExp/Function.');
+    }
+    api[type] = callback;
   }
-  var is = type === 'is';
-  var callback;
-  switch(_type) {
-    case utils.TYPE_STRING:
-      var parts = checker.split(':');
-      var _checker = defaults.checkers[parts[0]];
-      if (typeof _checker === 'undefined') {
-        throw new TypeError('Checker ' + parts[0] + ' is not defined.');
-      }
-      callback = function(value) {
-        var result = _checker.call(this, parts.slice(1));
-        return is ?  result: !result;
-      };
-      break;
-    case utils.TYPE_REGEXP:
-      callback = function(value) {
-        var result = checker.test(value);
-        return is ? result : !result;
-      }
-      break;
-    case utils.TYPE_FUNCTION:
-      callback = checker;
-      break;
-    default:
-      throw new TypeError('Checker must be a String/RegExp/Function.');
+
+  if (utils.isArray(rules)) {
+    for (var i = 0, len = rules.length; i < len; ++i) {
+      registApiChecker(rules[i]);
+    }
+  } else {
+    registApiChecker(rules);
   }
-  registAPI(apiName, callback);
+
   return Validator;
 };
 
@@ -461,7 +463,7 @@ Validator.extend = function(constructorFunction) {
  */
 var FormValidator = Validator.extend(function(formOrSelector, validations) {
   if (typeof formOrSelector === 'string') {
-    this.$form = document.querySelectorAll(formOrSelector)[0];
+    this.$form = document.querySelectorAll(formOrSelector)[0]; // TODO: querySelectorAll兼容性
   } else {
     this.$form = formOrSelector;
   }
@@ -476,7 +478,7 @@ var FormValidator = Validator.extend(function(formOrSelector, validations) {
     }
     var $field = [];
     for (var j = 0; j < fields.length; ++j) {
-      $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]);
+      $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]); // TODO: querySelectorAll兼容性
     }
     var rules = validations[i].rules;
     rules = utils.isArray(rules) ? rules : [rules];
@@ -489,9 +491,10 @@ var FormValidator = Validator.extend(function(formOrSelector, validations) {
 
 /**
  * getChecker
- * TODO: 优先级修改为：this.checkers > api.checkers > defaults.checkers
+ * 优先级：this.checkers > api.checkers > defaults.checkers
  * @param {String} type
  * @return {Array} [checkerFunction, params]
+ * TODO:增加对取反符号`!`的支持
  */
 function getChecker(type) {
   var parts = type.split(':');
@@ -517,6 +520,7 @@ function getChecker(type) {
  * @method .check()
  * @override Validator.prototype.check()
  * @return {Boolean} pass or not
+ * TODO:增加对取反符号`!`的支持
  */
 FormValidator.prototype.check = function() {
   var $form = this.$form;
@@ -527,13 +531,17 @@ FormValidator.prototype.check = function() {
     var rules = validations[i].rules;
     for (var j = 0; j < rules.length; ++j) {
       var rule = rules[j];
-      var checker = getChecker.call(this, rule.type);
+      var not = rule.type[0] === '!';
+      var ruleType = not ? rule.type.slice(1) : rule.type;
+      var checker = getChecker.call(this, ruleType);
       var values  = [];
       for (var k = 0; k < $field.length; ++k) {
         values.push(utils.getValue($field[k]));
       }
       checker[1].unshift(values);
-      if (!checker[0].apply(null, checker[1])) {
+      var result = checker[0].apply(null, checker[1]);
+      if (not && result || !not && !result) {
+
         var context = $field.length < 2 ? $field[0] : $field;
         rule.fail.call(context, $form);
         pass = false;
