@@ -31,7 +31,7 @@ utils.getValue = function(htmlElement) {
  * 解析length规则的参数
  * @param {String} paramString
  * @return {Array} params
- * TODO: 这里的解析可以更复杂，例如，加入对布尔运算的解析
+ * TODO: 这里的解析可以更复杂，例如，加入对布尔运算(`&&`,`||`)的解析
  */
 utils.getLengthParams = function(paramString) {
   paramString = paramString[0]; // 暂时只做最简单的解析
@@ -51,7 +51,7 @@ utils.getLengthParams = function(paramString) {
     throw new TypeError('The parameters for length is illegal.');
   }
   if (typeof max === 'undefined') {
-    max = Infinite;
+    max = Infinity;
   } else if (result[4] === ')') {
     max = +max-1;
   } else if (result[4] === ']'){
@@ -63,6 +63,40 @@ utils.getLengthParams = function(paramString) {
     throw new TypeError('The parameters for length is illegal.');
   }
   return [min, max];
+};
+
+/**
+ * 解析range规则的参数
+ * @param {String} paramString
+ * @return {Array} params
+ * @throws {TypeError} 'The parameters for range is illegal.'
+ */
+utils.getRangeParams = function(paramString) {
+  var errorString = 'The parameters for range is illegal.';
+  paramString = paramString[0]; // HACK: 假设只有一个参数
+  var matcher = /\s*([\(\[])\s*(匹配浮点数)?\s*,\s*(匹配浮点数)?\s*([\)\]])\s*/; // 如果没有最小限制，最小限制为负无穷；如果没有最大限制，最大限制为正无穷
+  var result = paramString.match(matcher);
+  if (result === null) {
+    throw new TypeError(errorString);
+  }
+  var min = result[2], max = result[3], leftEqual, rightEqual;
+  if (typeof min === 'undefined') {
+    min = -Infinity;
+  } else {
+    min = +min;
+  }
+  leftEqual = result[1] === '[';
+  if (typeof max === 'undefined') {
+    max = Infinity;
+  } else {
+    max = +max;
+  }
+  rightEqual = result[4] === ']';
+  if (min !== min || max !== max) { // NaN
+    debugger // HACK: 不应该跑到这段代码
+    throw new TypeError(errorString);
+  }
+  return [leftEqual, min, max, rightEqual];
 };
 
 /**

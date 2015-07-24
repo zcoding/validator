@@ -20,7 +20,7 @@ var is = Validator.is = function(ruleName, value) {
  * @return {Boolean} is or not
  */
 var not = Validator.not = function(ruleName, value) {
-  var checker = api.checkers[ruleName] || checkers[ruleName];
+  var checker = api.checkers[ruleName] || defaults.checkers[ruleName];
   if (!utils.isFunction(checker)) {
     throw new TypeError('Checker for ' + ruleName + ' is not defined.');
   }
@@ -30,18 +30,34 @@ var not = Validator.not = function(ruleName, value) {
 };
 
 /**
- * This helper helps to regist default checkers into is/not 注册内建规则到is/not
- * 注册is/not的时候，注意不要和属性名重名，为了避免这一情况，只有默认规则注册到is/not，通过.api()注册的其它规则注册到api.checkers对象
+ * This helper helps to regist default checkers, `is` api and `not` api
+ * @param {String} name
+ * @param {Object} matcher
  */
-function registIsNot(name, checker) {
-  is[name] = checker;
-  not[name] = function(value) {
-    return !checker(value);
+function registDefaultCheckers(name, matcher) {
+  var callback;
+  switch(utils.type(matcher)) {
+    case utils.TYPE_REGEXP:
+      callback = function(value) {
+        return matcher.test(value);
+      };
+      break;
+    case utils.TYPE_FUNCTION:
+      callback = matcher;
+      break;
+    default:
+      throw new TypeError('Matcher Type Error.');
+  }
+  defaults.checkers[name] = callback;
+  is[name] = callback;
+  not[name] = function() {
+    return callback.apply(null, arguments);
   };
 }
-for (var c in defaults.checkers) {
-  if (defaults.checkers.hasOwnProperty(c)) {
-    registIsNot(c, defaults.checkers[c]);
+
+for (var m in defaults.matchers) {
+  if (defaults.matchers.hasOwnProperty(m)) {
+    registDefaultCheckers(m, defaults.matchers[m]);
   }
 }
 

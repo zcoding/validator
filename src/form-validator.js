@@ -38,7 +38,6 @@ var FormValidator = Validator.extend(function(formOrSelector, validations) {
  * 优先级：this.checkers > api.checkers > defaults.checkers
  * @param {String} type
  * @return {Array} [checkerFunction, params]
- * TODO:增加对取反符号`!`的支持
  */
 function getChecker(type) {
   var parts = type.split(':');
@@ -51,8 +50,10 @@ function getChecker(type) {
   var _params = parts.slice(1);
   switch (type) {
     case 'long':
-    case 'range':
       params = utils.getLengthParams(_params);
+      break;
+    case 'range':
+      params = utils.getRangeParams(_params);
       break;
     default:
       params = _params;

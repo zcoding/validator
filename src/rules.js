@@ -4,9 +4,7 @@ var defaults = {};
 // 从第二个参数起，每个checker函数带有不同长度的参数列表。例如，empty函数的参数列表长度为0，long函数的参数列表长度为2（暂时，有待改进）
 defaults.checkers = {};
 
-var rules = defaults.rules = ['empty', 'long', 'email', 'url', 'yes']; // 内置规则
-
-var matchers = {
+defaults.matchers = {
   ////////// 正则匹配
   url: /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
   , email: /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i
@@ -36,37 +34,12 @@ var matchers = {
   // 空限制
   , empty: empty
   // 相等
-  , equal: isEqual
+  , equal: equal
   // 长度范围限制
   , long: long
   // 数值大小限制
   , range: range
 };
-
-function registDefaultCheckers(name, matcher) {
-  var callback;
-  switch(utils.type(matcher)) {
-    case utils.TYPE_REGEXP:
-      callback = function(value) {
-        return matcher.test(value);
-      };
-      break;
-    case utils.TYPE_FUNCTION:
-      callback = matcher;
-      break;
-    default:
-      throw new TypeError('Matcher Type Error.');
-  }
-  defaults.checkers[name] = callback;
-}
-
-// 注册defaults.checker
-// 循环内引用对象的BUG
-for (var m in matchers) {
-  if (matchers.hasOwnProperty(m)) {
-    registDefaultCheckers(m, matchers[m]);
-  }
-}
 
 /**
  * 判断值是否为空
@@ -79,11 +52,11 @@ function isEmpty(value) {
 }
 
 /**
- * equal check
+ * defaults.checkers: equal check
  * @param {Array} values
  * @return {Boolean} equal or not
  */
-function isEqual(values) {
+function equal(values) {
   var equal = true;
   for (var i = 0, len = values.length; i < len - 1; ++i) {
     if (values[i] !== values[i+1]) {
@@ -132,16 +105,21 @@ function long(values, min, max) {
 /**
  * defaults.check: number range check
  * 这个函数和long类似，但是不是用来限制长度的，而是用来限制数值本身的
- * TODO:和long不同，min可以是负数甚至是负无穷（未指定时），而且min和max都可以是浮点型
  * @param {Array} values
+ * @param {Boolean} leftEqual 是否大于等于
  * @param {Number} min
  * @param {Number} max
+ * @param {Boolean} rightEqual 是否小于等于
  * @return {Boolean} yes or no
  */
-function range(values, min, max) {
+function range(values, leftEqual, min, max, rightEqual) {
   var pass = true;
   for (var i = 0, len = values.length; i < len; ++i) {
-    // 首先应该保证是数值型，如果不是就抛出异常（在实际验证中应该在这个规则之前写一个数值型验证）
+    var value = values[i];
+    if (leftEqual && value < min || rightEqual && value > max || !leftEqual && value <= min || !rightEqual && value >= max) {
+      pass = false;
+      break;
+    }
   }
   return pass;
 };
