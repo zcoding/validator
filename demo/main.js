@@ -46,6 +46,23 @@ var validationConfig = [
   },
 
   {
+    field: 'age',
+    rules: [{
+      type: 'int',
+      fail: function() {
+        this.classList.add('error');
+        alert('年龄必须为整数');
+      }
+    }, {
+      type: 'range:[20,)',
+      fail: function() {
+        this.classList.add('error');
+        alert('您的年龄未符合要求（20岁及以上）');
+      }
+    }]
+  },
+
+  {
     field: 'email',
     rules: {
       type: 'email',

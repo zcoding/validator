@@ -34,7 +34,7 @@ utils.getValue = function(htmlElement) {
  * TODO: 这里的解析可以更复杂，例如，加入对布尔运算(`&&`,`||`)的解析
  */
 utils.getLengthParams = function(paramString) {
-  paramString = paramString[0]; // 暂时只做最简单的解析
+  paramString = paramString[0]; // HACK: 假设只有一个参数
   var matcher = /\s*([\(\[])\s*(\d+)?\s*,\s*(\d+)?\s*([\)\]])\s*/; // 如果没有最小限制，最小限制为0；如果没有最大限制，最大限制为Infinite
   var result = paramString.match(matcher);
   if (result === null) {
@@ -70,16 +70,17 @@ utils.getLengthParams = function(paramString) {
  * @param {String} paramString
  * @return {Array} params
  * @throws {TypeError} 'The parameters for range is illegal.'
+ * TODO: 类似length规则
  */
 utils.getRangeParams = function(paramString) {
   var errorString = 'The parameters for range is illegal.';
-  paramString = paramString[0]; // HACK: 假设只有一个参数
-  var matcher = /\s*([\(\[])\s*(匹配浮点数)?\s*,\s*(匹配浮点数)?\s*([\)\]])\s*/; // 如果没有最小限制，最小限制为负无穷；如果没有最大限制，最大限制为正无穷
+  paramString = paramString[0];
+  var matcher = /\s*([\(\[])\s*((0|([\+\-]?[1-9]\d*))(\.[0-9]+)?)?\s*,\s*((0|([\+\-]?[1-9]\d*))(\.[0-9]+)?)?\s*([\)\]])\s*/; // 如果没有最小限制，最小限制为负无穷；如果没有最大限制，最大限制为正无穷
   var result = paramString.match(matcher);
   if (result === null) {
     throw new TypeError(errorString);
   }
-  var min = result[2], max = result[3], leftEqual, rightEqual;
+  var min = result[2], max = result[6], leftEqual, rightEqual;
   if (typeof min === 'undefined') {
     min = -Infinity;
   } else {
@@ -91,11 +92,7 @@ utils.getRangeParams = function(paramString) {
   } else {
     max = +max;
   }
-  rightEqual = result[4] === ']';
-  if (min !== min || max !== max) { // NaN
-    debugger // HACK: 不应该跑到这段代码
-    throw new TypeError(errorString);
-  }
+  rightEqual = result[10] === ']';
   return [leftEqual, min, max, rightEqual];
 };
 
