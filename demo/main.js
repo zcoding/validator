@@ -1,6 +1,5 @@
 // 配置需要验证的规则
 var validationConfig = [
-
   {
     field: 'name',
     rules: [{                           // 两个规则，按先后顺序验证
@@ -10,9 +9,7 @@ var validationConfig = [
       type: 'length:(5,12]',            // 验证类型：长度限制在6到12个字符
       fail: normalFail('昵称6到12个中/英文字符')
     }]
-  },
-
-  {
+  }, {
     field: 'password',
     rules: [{
       type: '!empty',
@@ -30,9 +27,7 @@ var validationConfig = [
       type: 'specialChar',              // 自定义的规则，必须先定义后使用，否则会抛出TypeError异常
       fail: normalFail('密码只能包含英文字母/数字')
     }]
-  },
-
-  {
+  }, {
     field: ['password', 'password2'],
     rules: {
       type: 'equal',
@@ -43,9 +38,7 @@ var validationConfig = [
         alert('两次密码不匹配');
       }
     }
-  },
-
-  {
+  }, {
     field: 'age',
     rules: [{
       type: 'int',
@@ -60,9 +53,7 @@ var validationConfig = [
         alert('您的年龄未符合要求（20岁及以上）');
       }
     }]
-  },
-
-  {
+  }, {
     field: 'email',
     rules: {
       type: 'email',
@@ -71,9 +62,7 @@ var validationConfig = [
         alert('电子邮件格式错误');
       }
     }
-  },
-
-  {
+  }, {
     field: ['email', 'address'],
     rules: {
       type: '!empty', // HACK: empty的参数是数组，表示所有都不为空，前面加`!``运算符，表示的是并不是所有都不为空（不代表每个都不能为空）
@@ -117,5 +106,21 @@ myForm.addEventListener('submit', function(event) {
   }
   // 现在可以直接提交或者用ajax提交
   alert('全部通过');
+  return false;
+}, false);
+
+var nonForm = document.getElementById("non-form");
+var checkNonForm = new FormValidator(nonForm, validationConfig);
+checkNonForm.add([{
+  name: 'specialChar',
+  rule: /^[a-zA-Z0-9]+$/
+}]);
+document.getElementById("non-form-submit").addEventListener("click", function(event) {
+  event.preventDefault();
+  if (!checkNonForm.check()) {
+    console.log('non-form not pass!');
+    return false;
+  }
+  alert('non form pass!');
   return false;
 }, false);

@@ -6,35 +6,76 @@
   <link rel="stylesheet" href="demo.css">
 </head>
 <body>
-  <form action="/" method="GET" id="myForm">
-    <div class="form-group">
-      <label for="name">Name: </label>
-      <input type="text" placeholder="name" name="name" id="name">
+  <div class="container">
+    <div class="header">
+      <h2>This is a form demo.</h2>
     </div>
-    <div class="form-group">
-      <label for="password">Password:</label>
-      <input type="password" placeholder="password" name="password" id="password">
+    <form action="/" method="GET" id="myForm" class="form">
+      <div class="form-group">
+        <label for="name">Name: </label>
+        <input type="text" placeholder="name" name="name" id="name">
+      </div>
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" placeholder="password" name="password" id="password">
+      </div>
+      <div class="form-group">
+        <label for="password2">Confirm password:</label>
+        <input type="password" placeholder="confirm password" name="password2" id="password2">
+      </div>
+      <div class="form-group">
+        <label for="age">Age:</label>
+        <input type="text" placeholder="age" name="age" id="age">
+      </div>
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="text" placeholder="email" name="email" id="email">
+      </div>
+      <div class="form-group">
+        <label for="address">Address:</label>
+        <input type="text" placeholder="address" name="address" id="address">
+      </div>
+      <div class="form-group" style="text-align: right;">
+        <button type="submit" class="button">save</button>
+      </div>
+    </form>
+    <div class="header">
+      <h2>This is a non-form demo.</h2>
     </div>
-    <div class="form-group">
-      <label for="password2">Confirm password:</label>
-      <input type="password" placeholder="confirm password" name="password2" id="password2">
+    <div class="form" id="non-form">
+      <div class="form-group">
+        <label for="field-name">Name: </label>
+        <input type="text" placeholder="name" data-name="name" id="field-name">
+      </div>
+      <div class="form-group">
+        <label for="field-password">Password:</label>
+        <input type="password" placeholder="password" data-name="password" id="field-password">
+      </div>
+      <div class="form-group">
+        <label for="field-password2">Confirm password:</label>
+        <input type="password" placeholder="confirm password" data-name="password2" id="field-password2">
+      </div>
+      <div class="form-group">
+        <label for="field-age">Age:</label>
+        <input type="text" placeholder="age" name="age" id="field-age">
+      </div>
+      <div class="form-group">
+        <label for="field-email">Email:</label>
+        <input type="text" placeholder="email" name="email" id="field-email">
+      </div>
+      <div class="form-group">
+        <label for="field-address">Address:</label>
+        <input type="text" placeholder="address" name="address" id="field-address">
+      </div>
+      <div class="form-group">
+        <label for="field-content">Content:</label>
+        <textarea name="field-content" id="field-content" rows="6"></textarea>
+      </div>
+      <div class="form-group" style="text-align: right;">
+        <button class="button" id="non-form-submit">save</button>
+      </div>
     </div>
-    <div class="form-group">
-      <label for="age">Age:</label>
-      <input type="text" placeholder="age" name="age" id="age">
-    </div>
-    <div class="form-group">
-      <label for="email">Email:</label>
-      <input type="text" placeholder="email" name="email" id="email">
-    </div>
-    <div class="form-group">
-      <label for="address">Address:</label>
-      <input type="text" placeholder="address" name="address" id="address">
-    </div>
-    <div class="form-group">
-      <input type="submit" value="save">
-    </div>
-  </form>
+  </div>
   <script src="../build/spa-public-validator.js"></script>
   <script src="main.js"></script>
 </body>

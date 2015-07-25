@@ -20,14 +20,18 @@ var FormValidator = Validator.extend(function(formOrSelector, validations) {
     if (!utils.isArray(fields)) {
       fields = [fields];
     }
-    var $field = [];
+    var $fields = [];
     for (var j = 0; j < fields.length; ++j) {
-      $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]); // TODO: querySelectorAll兼容性
+      var $field = this.$form.querySelectorAll('[name=' + fields[j] + ']')[0] || this.$form.querySelectorAll('[data-name=' + fields[j] + ']')[0]; // TODO: querySelectorAll兼容性
+      if (typeof $field === 'undefined') {
+        throw new TypeError('未找到域：' + fields[j]);
+      }
+      $fields.push($field);
     }
     var rules = validations[i].rules;
     rules = utils.isArray(rules) ? rules : [rules];
     this.validations.push({
-      $field: $field,
+      $field: $fields,
       rules: rules
     });
   }
