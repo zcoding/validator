@@ -5,37 +5,40 @@
  * @param {HTMLElement|String} formOrSelector
  * @param {Object|Array} validations
  */
-var FormValidator = Validator.extend(function(formOrSelector, validations) {
+var FormValidator = function(formOrSelector, validations) {
+  this.vs = []; // 必须！
   if (typeof formOrSelector === 'string') {
     this.$form = document.querySelectorAll(formOrSelector)[0]; // TODO: querySelectorAll兼容性
   } else {
     this.$form = formOrSelector;
   }
-  this.validations = [];
-  if (!utils.isArray(validations)) {
+  if (!isArray(validations)) {
     validations = [validations];
   }
   for (var i = 0, len = validations.length; i < len; ++i) {
     var fields = validations[i].field;
-    if (!utils.isArray(fields)) {
+    if (!isArray(fields)) {
       fields = [fields];
     }
     var $fields = [];
     for (var j = 0; j < fields.length; ++j) {
       var $field = this.$form.querySelectorAll('[name=' + fields[j] + ']')[0] || this.$form.querySelectorAll('[data-name=' + fields[j] + ']')[0]; // TODO: querySelectorAll兼容性
-      if (typeof $field === 'undefined') {
+      if (typeof $field === TYPE_UNDEFINED) {
         throw new TypeError('未找到域：' + fields[j]);
       }
       $fields.push($field);
     }
     var rules = validations[i].rules;
-    rules = utils.isArray(rules) ? rules : [rules];
-    this.validations.push({
-      $field: $fields,
-      rules: rules
+    rules = isArray(rules) ? rules : [rules];
+    this.vs.push({
+      $fs: $fields,
+      rs: rules
     });
   }
-});
+};
+
+FormValidator.prototype = new Validator();
+FormValidator.prototype.constructor = FormValidator;
 
 /**
  * getChecker
@@ -46,8 +49,8 @@ var FormValidator = Validator.extend(function(formOrSelector, validations) {
 function getChecker(type) {
   var parts = type.split(':');
   type = parts[0].replace(/length/i, 'long');
-  var checker = this.checkers[type] || api.checkers[type] || defaults.checkers[type];
-  if (!utils.isFunction(checker)) {
+  var checker = this.cs[type] || apiCheckers[type] || defaultCheckers[type];
+  if (!isFunction(checker)) {
     throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
   }
   var params;
@@ -69,32 +72,31 @@ function getChecker(type) {
  * @method .check()
  * @override Validator.prototype.check()
  * @return {Boolean} pass or not
- * TODO:增加对取反符号`!`的支持
+ * TODO: 增加对`&&`,`||`的支持
  */
 FormValidator.prototype.check = function() {
   var $form = this.$form;
-  var validations = this.validations;
+  var validations = this.vs;
   var pass = true;
-  for (var i = 0, len = validations.length; i < len; ++i) {
-    var $field = validations[i].$field;
-    var rules = validations[i].rules;
+  for (var i = 0; i < validations.length; ++i) {
+    var $fields = validations[i].$fs;
+    var rules = validations[i].rs;
     for (var j = 0; j < rules.length; ++j) {
       var rule = rules[j];
       var not = rule.type[0] === '!';
       var ruleType = not ? rule.type.slice(1) : rule.type;
       var checker = getChecker.call(this, ruleType);
       var values  = [];
-      for (var k = 0; k < $field.length; ++k) {
-        values.push(utils.getValue($field[k]));
+      for (var k = 0; k < $fields.length; ++k) {
+        values.push(utils.getValue($fields[k]));
       }
       checker[1].unshift(values);
       var result = checker[0].apply(null, checker[1]);
       if (not && result || !not && !result) {
-
-        var context = $field.length < 2 ? $field[0] : $field;
+        var context = $fields.length < 2 ? $fields[0] : $fields;
         rule.fail.call(context, $form);
         pass = false;
-        break;
+        break; // HACK: 也许应该支持不跳出：这样就是每次都检查所有的域的所有规则
       }
     }
     if (!pass) break;

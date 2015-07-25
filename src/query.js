@@ -12,4 +12,5 @@
  * @return {Array} element list
  */
 var query = function(selector) {
+  
 };

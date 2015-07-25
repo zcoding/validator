@@ -4,6 +4,7 @@ spa-public-validator是一个无依赖的表单验证模块，使用基于配置
 ##配置表单验证
 ###一个域验证多个规则
 ```javascript
+// 一个域限制了多个规则，按照定义的顺序进行验证
 {
   field: 'name',
   rules: [{
@@ -20,6 +21,17 @@ spa-public-validator是一个无依赖的表单验证模块，使用基于配置
     }
   }]
 }
+// 一个域限制了多个规则，而且必须同时满足这几个规则
+{
+  field: 'name',
+  rules: {
+    type: 'length:[10, 20]||length:(20,)&&url' // 长度为10到20个字符，或者20个字符以上且必须是url
+    fail: function() {
+      this.classList.add('error');
+      alert('长度不符合要求或者格式不正确');
+    }
+  }
+}
 ```
 当一个域含有多个验证规则的时候，在验证的时候总是按照定义的顺序进行验证，一旦某个规则没有通过，就会立即停止验证，不会再继续后面的验证
 
@@ -29,7 +41,7 @@ spa-public-validator是一个无依赖的表单验证模块，使用基于配置
 {
   field: ['fieldA', 'fieldB']
   rules: {
-    type: 'notAllEmpty',
+    type: '!empty',
     fail: function(form) {
       var fields = this; // 注意：此时的this是一个数组，按照field的顺序
       for (var i = 0, len = fields.length; i < len; ++i) {
@@ -41,8 +53,8 @@ spa-public-validator是一个无依赖的表单验证模块，使用基于配置
 }
 ```
 
-###条件验证
-有时候需要在某种条件下验证，在某种情况下不验证
+###<del>条件验证</del>
+<del>有时候需要在某种条件下验证，在某种情况下不验证</del>
 
 ##规则的类型
 优先级： 实例规则 > API规则 > 内建规则

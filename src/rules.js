@@ -1,10 +1,8 @@
-var defaults = {};
-
 // checker函数的第一个参数总是一个数组，这个数组就是待检测的字符串数组
 // 从第二个参数起，每个checker函数带有不同长度的参数列表。例如，empty函数的参数列表长度为0，long函数的参数列表长度为2（暂时，有待改进）
-defaults.checkers = {};
+var defaultCheckers = {};
 
-defaults.matchers = {
+var defaultMatchers = {
   ////////// 正则匹配
   url: /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
   , email: /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i
@@ -49,7 +47,7 @@ defaults.matchers = {
  * @return {Boolean} 是否为空
  */
 function isEmpty(value) {
-  return value === null || typeof value === 'undefined' || value === '';
+  return value === null || typeof value === TYPE_UNDEFINED || value === '';
 }
 
 /**
@@ -59,7 +57,7 @@ function isEmpty(value) {
  */
 function equal(values) {
   var equal = true;
-  for (var i = 0, len = values.length; i < len - 1; ++i) {
+  for (var i = 0; i < values.length - 1; ++i) {
     if (values[i] !== values[i+1]) {
       equal = false;
       break;
@@ -75,7 +73,7 @@ function equal(values) {
  */
 function empty(values) {
   var pass = true;
-  for (var i = 0, len = values.length; i < len; ++i) {
+  for (var i = 0; i < values.length; ++i) {
     if (!isEmpty(values[i])) {
       pass = false;
       break;
@@ -93,7 +91,7 @@ function empty(values) {
  */
 function long(values, min, max) {
   var pass = true;
-  for (var i = 0, len = values.length; i < len; ++i) {
+  for (var i = 0; i < values.length; ++i) {
     var length = values[i].length;
     if (length < min || length > max) {
       pass = false;
@@ -115,7 +113,7 @@ function long(values, min, max) {
  */
 function range(values, leftEqual, min, max, rightEqual) {
   var pass = true;
-  for (var i = 0, len = values.length; i < len; ++i) {
+  for (var i = 0; i < values.length; ++i) {
     var value = values[i];
     if (leftEqual && value < min || rightEqual && value > max || !leftEqual && value <= min || !rightEqual && value >= max) {
       pass = false;

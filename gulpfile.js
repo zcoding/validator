@@ -6,7 +6,7 @@ var rename = require('gulp-rename');
 var zip = require('gulp-zip');
 var config = require('./package.json');
 
-var source = ['intro', 'utils', 'validator', 'rules', 'api', 'extend', 'form-validator', 'outro'];
+var source = ['intro', 'query', 'utils', 'validator', 'rules', 'api', 'extend', 'form-validator', 'outro'];
 
 var sourcePath = source.map(function(file) {
   return 'src/' + file + '.js';

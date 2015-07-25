@@ -3,18 +3,18 @@
  * @class Validator
  * @param {Array|Object} validations
  */
-var Validator = function(validations) {
-  this.checkers = {};
+function Validator(validations) {
+  this.cs = {};
 
   validations = validations || [];
 
-  this.validations = [];
-  if (!utils.isArray(validations)) {
+  this.vs = [];
+  if (!isArray(validations)) {
     validations = [validations];
   }
   for (var i = 0, len = validations.length; i < len; ++i) {
     var fields = validations[i].field;
-    if (!utils.isArray(fields)) {
+    if (!isArray(fields)) {
       fields = [fields];
     }
     var $field = [];
@@ -22,8 +22,8 @@ var Validator = function(validations) {
       $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]);
     }
     var rules = validations[i].rules;
-    rules = utils.isArray(rules) ? rules : [rules];
-    this.validations.push({
+    rules = isArray(rules) ? rules : [rules];
+    this.vs.push({
       $field: $field,
       rules: rules
     });
@@ -40,18 +40,18 @@ var vprtt = Validator.prototype;
  */
 vprtt.add = function(rules) {
   function setRule(rule) {
-    switch (utils.type(rule.rule)) {
-      case utils.TYPE_FUNCTION:
-        this.checkers[rule.name] = rule.rule;
+    switch (getType(rule.rule)) {
+      case TYPE_FUNCTION:
+        this.cs[rule.name] = rule.rule;
         break;
-      case utils.TYPE_STRING:
-        this.checkers[rule.name] = function() {
+      case TYPE_STRING:
+        this.cs[rule.name] = function() {
         };
         break;
-      case utils.TYPE_REGEXP:
-        this.checkers[rule.name] = function(values) {
+      case TYPE_REGEXP:
+        this.cs[rule.name] = function(values) {
           var pass = true;
-          if (utils.isArray(values)) {
+          if (isArray(values)) {
             for (var i = 0, len = values.length; i < len; ++i) {
               if (!rule.rule.test(values[i])) {
                 pass = false;
@@ -70,7 +70,7 @@ vprtt.add = function(rules) {
         throw new TypeError('Rule type not support.');
     }
   }
-  if (utils.isArray(rules)) {
+  if (isArray(rules)) {
     for (var i = 0, len = rules.length; i < len; ++i) {
       setRule.call(this, rules[i]);
     }
@@ -96,11 +96,11 @@ vprtt.check = function() {
  */
 vprtt.remove = function(rules) {
   function removeRule(rule) {
-    if (typeof this.checkers[rule] !== 'undefined') {
-      delete this.checkers[rule];
+    if (typeof this.cs[rule] !== TYPE_UNDEFINED) {
+      delete this.cs[rule];
     }
   }
-  if (utils.isArray(rules)) {
+  if (isArray(rules)) {
     for (var i = 0, len = rules.length; i < len; ++i) {
       removeRule(rules[i]);
     }

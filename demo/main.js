@@ -75,6 +75,16 @@ var validationConfig = [
       }
     }
   }
+  // , {
+  //   field: 'content',
+  //   rules: {
+  //     type: 'length:(9, 20]||length:(20)&&specialChar', // 组合规则：10到20个字符且不包含非法字符，或者20个字符以上（可以包含非法字符）
+  //     fail: function() {
+  //       this.classList.add('error');
+  //       alert('content长度不符合要求或者包含有非法字符');
+  //     }
+  //   }
+  // }
 
 ];
 

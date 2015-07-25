@@ -1,3 +1,5 @@
+var apiCheckers = {};
+
 /**
  * @static Validator.is
  * 优先级： api.checkers > defaults.checkers
@@ -6,8 +8,8 @@
  * @return {Boolean} is or not
  */
 var is = Validator.is = function(ruleName, value) {
-  var checker = api.checkers[ruleName] || defaults.checkers[ruleName];
-  if (!utils.isFunction(checker)) {
+  var checker = apiCheckers[ruleName] || defaultCheckers[ruleName];
+  if (!isFunction(checker)) {
     throw new TypeError('Checker for ' + ruleName + ' is not defined.');
   }
   return checker(value);
@@ -20,8 +22,8 @@ var is = Validator.is = function(ruleName, value) {
  * @return {Boolean} is or not
  */
 var not = Validator.not = function(ruleName, value) {
-  var checker = api.checkers[ruleName] || defaults.checkers[ruleName];
-  if (!utils.isFunction(checker)) {
+  var checker = apiCheckers[ruleName] || defaultCheckers[ruleName];
+  if (!isFunction(checker)) {
     throw new TypeError('Checker for ' + ruleName + ' is not defined.');
   }
   return function(value) {
@@ -36,34 +38,30 @@ var not = Validator.not = function(ruleName, value) {
  */
 function registDefaultCheckers(name, matcher) {
   var callback;
-  switch(utils.type(matcher)) {
-    case utils.TYPE_REGEXP:
+  switch(getType(matcher)) {
+    case TYPE_REGEXP:
       callback = function(value) {
         return matcher.test(value);
       };
       break;
-    case utils.TYPE_FUNCTION:
+    case TYPE_FUNCTION:
       callback = matcher;
       break;
     default:
       throw new TypeError('Matcher Type Error.');
   }
-  defaults.checkers[name] = callback;
+  defaultCheckers[name] = callback;
   is[name] = callback;
   not[name] = function() {
     return callback.apply(null, arguments);
   };
 }
 
-for (var m in defaults.matchers) {
-  if (defaults.matchers.hasOwnProperty(m)) {
-    registDefaultCheckers(m, defaults.matchers[m]);
+for (var m in defaultMatchers) {
+  if (hasOwn.call(defaultMatchers, m)) {
+    registDefaultCheckers(m, defaultMatchers[m]);
   }
 }
-
-var api = {};
-
-api.checkers = {};
 
 /**
  * @static Validator.api(type, apiName, checker)
@@ -83,35 +81,34 @@ Validator.api = function(rules) {
    * This function may throw a `TypeError` if checker's type is not support.
    */
   function registApiChecker(type, checker) {
-    var _type = utils.type(checker);
     var callback;
-    switch(_type) {
-      case utils.TYPE_STRING:
+    switch(getType(checker)) {
+      case TYPE_STRING:
         var parts = checker.split(':');
-        var _checker = defaults.checkers[parts[0]];
-        if (typeof _checker === 'undefined') {
+        var _checker = defaultCheckers[parts[0]];
+        if (typeof _checker === TYPE_UNDEFINED) {
           throw new TypeError('Checker ' + parts[0] + ' is not defined.');
         }
         callback = function(value) {
           return _checker.call(this, parts.slice(1));
         };
         break;
-      case utils.TYPE_REGEXP:
+      case TYPE_REGEXP:
         callback = function(value) {
           return checker.test(value);
         }
         break;
-      case utils.TYPE_FUNCTION:
+      case TYPE_FUNCTION:
         callback = checker;
         break;
       default:
         throw new TypeError('Checker must be a String/RegExp/Function.');
     }
-    api[type] = callback;
+    apiCheckers[type] = callback;
   }
 
-  if (utils.isArray(rules)) {
-    for (var i = 0, len = rules.length; i < len; ++i) {
+  if (isArray(rules)) {
+    for (var i = 0; i < rules.length; ++i) {
       registApiChecker(rules[i]);
     }
   } else {
