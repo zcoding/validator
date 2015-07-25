@@ -7,7 +7,7 @@ spa-public-validator是一个无依赖的表单验证模块，使用基于配置
 {
   field: 'name',
   rules: [{
-    type: 'notEmpty',
+    type: '!empty',
     fail: function(form) {
       this.classList.add('error');
       alert('昵称不能为空');
@@ -98,9 +98,9 @@ FormValidator重写了`.check`方法，并且支持只有表单才具备的验�
 ```
 
 ##内建规则
-###`notEmpty`
-非空限制
-+ `{type: "notEmpty"}`
+###`empty`
+空限制
++ `{type: "!empty"}` 这是限制非空
 
 ###`length:(min,max)`
 长度限制
@@ -111,6 +111,8 @@ FormValidator重写了`.check`方法，并且支持只有表单才具备的验�
 
 ###`range:(min,max)`
 数值大小限制（使用方法参考`length`）
+
+区别于长度限制，可以使用浮点数
 
 注意改方法不验证是否为数值类型，即该方法默认用户输入为数值类型，如果不是，会抛出`TypeError`。为了不抛出错误，应该在该验证之前加入数值验证，即先验证其是否为数值，再验证数值是否在范围内
 
@@ -148,21 +150,39 @@ FormValidator重写了`.check`方法，并且支持只有表单才具备的验�
 ##API
 ###`Validator.is[type]`
 仅限内置规则的使用
-+ `Validator.is.empty`
-+ `Validator.is.email`
 + `Validator.is.url`
-+ `Validator.is.limit`
++ `Validator.is.email`
 + `Validator.is.number`
-+ `Validator.is.yes`
++ `Validator.is.int`
++ `Validator.is.positive`
++ `Validator.is.negative`
++ `Validator.is.varName`
++ `Validator.is.nickName`
++ `Validator.is.QQ`
++ `Validator.is.upperCase`
++ `Validator.is.lowerCase`
++ `Validator.is.empty`
++ `Validator.is.equal`
++ `Validator.is.long`
++ `Validator.is.range`
 
 ###`Validator.not[type]`
 仅限内置规则的使用
-+ `Validator.not.empty`
-+ `Validator.not.email`
 + `Validator.not.url`
-+ `Validator.not.limit`
++ `Validator.not.email`
 + `Validator.not.number`
-+ `Validator.not.yes`
++ `Validator.not.int`
++ `Validator.not.positive`
++ `Validator.not.negative`
++ `Validator.not.varName`
++ `Validator.not.nickName`
++ `Validator.not.QQ`
++ `Validator.not.upperCase`
++ `Validator.not.lowerCase`
++ `Validator.not.empty`
++ `Validator.not.equal`
++ `Validator.not.long`
++ `Validator.not.range`
 
 ###`Validator.api`
 这个方法在Validator底层添加验证规则
@@ -185,7 +205,8 @@ Validator.not('biggerThan5', 3);  // true
 Validator.is('abc', 'AbCCacB');   // true
 // Validator.is/Validator.not既可以调用内置规则，也可以调用API规则，但API规则的优先级更高
 ```
-可不可以在添加一个像内置规则那样调用的规则？（可以，但并不推荐使用，这是为了和内置的规则区分，而且这样会覆盖内置规则。）
+
+可不可以在添加一个像内置规则那样调用的规则？（可以，但并<strong><em>不推荐使用</em></strong>，这是为了和内置的规则区分，而且这样会覆盖内置规则。）
 ```javascript
 Validator.is.something = function(value) {
   // check...
