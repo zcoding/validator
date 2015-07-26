@@ -77,7 +77,7 @@ var validationConfig = [
   }, {
     field: 'content',
     rules: {
-      type: 'length:(9, 20]||length:(20,)&&url', // 组合规则：10到20个字符（任意），或者20个字符以上（必须是url格式）
+      type: 'length:(20,)&&url||length:(9, 20]', // 组合规则：10到20个字符（任意），或者20个字符以上（必须是url格式）
       fail: function() {
         this.classList.add('error');
         alert('content长度不符合要求或者格式错误');
