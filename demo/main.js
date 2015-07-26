@@ -74,17 +74,16 @@ var validationConfig = [
         alert('EMAIL和Address不能同时为空');
       }
     }
+  }, {
+    field: 'content',
+    rules: {
+      type: 'length:(9, 20]||length:(20,)&&url', // 组合规则：10到20个字符（任意），或者20个字符以上（必须是url格式）
+      fail: function() {
+        this.classList.add('error');
+        alert('content长度不符合要求或者格式错误');
+      }
+    }
   }
-  // , {
-  //   field: 'content',
-  //   rules: {
-  //     type: 'length:(9, 20]||length:(20)&&specialChar', // 组合规则：10到20个字符且不包含非法字符，或者20个字符以上（可以包含非法字符）
-  //     fail: function() {
-  //       this.classList.add('error');
-  //       alert('content长度不符合要求或者包含有非法字符');
-  //     }
-  //   }
-  // }
 
 ];
 
@@ -97,6 +96,9 @@ var checkMyForm = new FormValidator(myForm, validationConfig);
 checkMyForm.add([{
   name: 'specialChar',
   rule: /^[a-zA-Z0-9]+$/
+}, {
+  name: 'notAllEmpty', // alias
+  rule: '!empty'
 }]);
 
 // 抽取公共处理函数

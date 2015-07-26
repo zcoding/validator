@@ -40,20 +40,29 @@ var vprtt = Validator.prototype;
  */
 vprtt.add = function(rules) {
   function setRule(rule) {
-    switch (getType(rule.rule)) {
+    var checker = rule.rule;
+    var callback;
+    switch (getType(checker)) {
       case TYPE_FUNCTION:
-        this.cs[rule.name] = rule.rule;
+        callback = checker;
         break;
       case TYPE_STRING:
-        this.cs[rule.name] = function() {
+        var self = this;
+        callback = function(values) {
+          // TODO: 解析规则
+          var realChecker = self.cs[checker] || apiCheckers[checker] || defaultCheckers[checker];
+          if (typeof realChecker === TYPE_UNDEFINED) {
+            throw new TypeError('Cannot find checker: ' + checker);
+          }
+          return realChecker(values);
         };
         break;
       case TYPE_REGEXP:
-        this.cs[rule.name] = function(values) {
+        callback = function(values) {
           var pass = true;
           if (isArray(values)) {
             for (var i = 0, len = values.length; i < len; ++i) {
-              if (!rule.rule.test(values[i])) {
+              if (!checker.test(values[i])) {
                 pass = false;
                 break;
               }
@@ -69,6 +78,7 @@ vprtt.add = function(rules) {
       default:
         throw new TypeError('Rule type not support.');
     }
+    this.cs[rule.name] = callback;
   }
   if (isArray(rules)) {
     for (var i = 0, len = rules.length; i < len; ++i) {
