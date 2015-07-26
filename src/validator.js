@@ -48,8 +48,14 @@ vprtt.add = function(rules) {
         break;
       case TYPE_STRING:
         var self = this;
+        // TODO: 解析规则
+        // var ruleQueue;
+        // try {
+        //   ruleQueue = parseRules(checker);
+        // } catch(error) {
+        //   throw new Error("Cannot parse rule expression.");
+        // }
         callback = function(values) {
-          // TODO: 解析规则
           var realChecker = self.cs[checker] || apiCheckers[checker] || defaultCheckers[checker];
           if (typeof realChecker === TYPE_UNDEFINED) {
             throw new TypeError('Cannot find checker: ' + checker);

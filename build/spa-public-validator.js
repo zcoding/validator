@@ -143,6 +143,118 @@ utils.getRangeParams = function(paramString) {
   return [leftEqual, min, max, rightEqual];
 };
 
+var priorityTable = {
+  "||": 0,
+  "&&": 1,
+  "!": 2
+};
+
+function priority(v1, v2) {
+  return priorityTable[v1] >= priorityTable[v2];
+}
+
+/**
+ * parse rules
+ * 解析规则字符串，获取规则名称，规则参数，与或非逻辑
+ * 用花括号表示分组，因为小括号和中括号已经作为参数有用
+ * @param {String} ruleString
+ * @return {Array} rules
+ */
+function parseRules(ruleString) { // 假设输入为： "{A||!B}&&C"
+  var wordQueue = []; // 词队列
+  var exQueue = []; // 后缀表达式队列
+  var opStack = []; // 操作符栈
+  // 1. 分词：wordQueue = ['{', 'A', '||', '!', 'B', '}', '&&', 'C']
+  var i = 0, c, word = '', op = '', len = ruleString.length;
+  while (i < len) {
+    c = ruleString[i++];
+    switch (c) {
+      case '{':
+      case '}':
+      case '!':
+        if (word.length > 0) {
+          wordQueue.push(word);
+        }
+        wordQueue.push(c);
+        word = '';
+        break;
+      case '&':
+      case '|':
+        if (c === op) {
+          if (word.length > 0) {
+            wordQueue.push(word);
+          }
+          wordQueue.push(op+op);
+          word = '';
+          op = '';
+        } else {
+          op += c;
+        }
+        break;
+      default:
+        word += c;
+    }
+  }
+  if (word.length > 0) {
+    wordQueue.push(word);
+  }
+  // 2. 将中缀转成后缀并输入后缀表达式栈：exQueue = ['A', 'B', '!', '||', 'C', '&&'];
+  i = 0;
+  len = wordQueue.length;
+  var j, pop;
+  while(i < len) {
+    c = wordQueue[i++];
+    switch (c) {
+      case '{':
+        opStack.push(c);
+        break;
+      case '||':
+      case '&&':
+      case '!':
+        j = opStack.length - 1;
+        while(j >= 0 && (opStack[j] === '||' ||  opStack[j] === '&&' || opStack[j] === '!')) {
+          if (priority(opStack[j], c)) { // 如果栈顶操作符优先级比较大或相等，就出栈
+            exQueue.push(opStack.pop());
+          } else {
+            break;
+          }
+          j--;
+        }
+        opStack.push(c);
+        break;
+      case '}':
+        j = opStack.length - 1;
+        while(j >= 0) {
+          pop = opStack.pop();
+          if (pop === '{') {
+            break;
+          }
+          exQueue.push(pop);
+          j--;
+        }
+        break;
+      default:
+        exQueue.push(c);
+    }
+  }
+  if (opStack.length > 0) {
+    j = opStack.length - 1;
+    while(j >= 0) {
+      pop = opStack.pop();
+      if (pop === '{') {
+        break;
+      }
+      exQueue.push(pop);
+      j--
+    }
+  }
+  // console.log('转成后缀：' + exQueue);
+  return exQueue;
+  // 下面两步不在这里做，直接在check函数里完成
+  // 3. 读取后缀表达式队列并运算
+  // 4. 优化：短路优化
+}
+
 /**
  * @constructor
  * @class Validator
@@ -193,14 +305,20 @@ vprtt.add = function(rules) {
         break;
       case TYPE_STRING:
         var self = this;
-        callback = function(values) {
-          // TODO: 解析规则
-          var realChecker = self.cs[checker] || apiCheckers[checker] || defaultCheckers[checker];
-          if (typeof realChecker === TYPE_UNDEFINED) {
-            throw new TypeError('Cannot find checker: ' + checker);
-          }
-          return realChecker(values);
-        };
+        // TODO: 解析规则
+        // var ruleQueue;
+        // try {
+        //   ruleQueue = parseRules(checker);
+        // } catch(error) {
+        //   throw new Error("Cannot parse rule expression.");
+        // }
+        // callback = function(values) {
+          // var realChecker = self.cs[checker] || apiCheckers[checker] || defaultCheckers[checker];
+          // if (typeof realChecker === TYPE_UNDEFINED) {
+          //   throw new TypeError('Cannot find checker: ' + checker);
+          // }
+          // return realChecker(values);
+        // };
         break;
       case TYPE_REGEXP:
         callback = function(values) {
@@ -594,118 +712,6 @@ function getChecker(type) {
   }
   return [checker, params];
 };
-
-var priorityTable = {
-  "||": 0,
-  "&&": 1,
-  "!": 2
-};
-
-function priority(v1, v2) {
-  return priorityTable[v1] >= priorityTable[v2];
-}
-
-/**
- * parse rules
- * 解析规则字符串，获取规则名称，规则参数，与或非逻辑
- * 用花括号表示分组，因为小括号和中括号已经作为参数有用
- * @param {String} ruleString
- * @return {Array} rules
- */
-function parseRules(ruleString) { // 假设输入为： "{A||!B}&&C"
-  var wordQueue = []; // 词队列
-  var exQueue = []; // 后缀表达式队列
-  var opStack = []; // 操作符栈
-  // 1. 分词：wordQueue = ['{', 'A', '||', '!', 'B', '}', '&&', 'C']
-  var i = 0, c, word = '', op = '', len = ruleString.length;
-  while (i < len) {
-    c = ruleString[i++];
-    switch (c) {
-      case '{':
-      case '}':
-      case '!':
-        if (word.length > 0) {
-          wordQueue.push(word);
-        }
-        wordQueue.push(c);
-        word = '';
-        break;
-      case '&':
-      case '|':
-        if (c === op) {
-          if (word.length > 0) {
-            wordQueue.push(word);
-          }
-          wordQueue.push(op+op);
-          word = '';
-          op = '';
-        } else {
-          op += c;
-        }
-        break;
-      default:
-        word += c;
-    }
-  }
-  if (word.length > 0) {
-    wordQueue.push(word);
-  }
-  // 2. 将中缀转成后缀并输入后缀表达式栈：exQueue = ['A', 'B', '!', '||', 'C', '&&'];
-  i = 0;
-  len = wordQueue.length;
-  var j, pop;
-  while(i < len) {
-    c = wordQueue[i++];
-    switch (c) {
-      case '{':
-        opStack.push(c);
-        break;
-      case '||':
-      case '&&':
-      case '!':
-        j = opStack.length - 1;
-        while(j >= 0 && (opStack[j] === '||' ||  opStack[j] === '&&' || opStack[j] === '!')) {
-          if (priority(opStack[j], c)) { // 如果栈顶操作符优先级比较大或相等，就出栈
-            exQueue.push(opStack.pop());
-          } else {
-            break;
-          }
-          j--;
-        }
-        opStack.push(c);
-        break;
-      case '}':
-        j = opStack.length - 1;
-        while(j >= 0) {
-          pop = opStack.pop();
-          if (pop === '{') {
-            break;
-          }
-          exQueue.push(pop);
-          j--;
-        }
-        break;
-      default:
-        exQueue.push(c);
-    }
-  }
-  if (opStack.length > 0) {
-    j = opStack.length - 1;
-    while(j >= 0) {
-      pop = opStack.pop();
-      if (pop === '{') {
-        break;
-      }
-      exQueue.push(pop);
-      j--
-    }
-  }
-  // console.log('转成后缀：' + exQueue);
-  return exQueue;
-  // 下面两步不在这里做，直接在check函数里完成
-  // 3. 读取后缀表达式队列并运算
-  // 4. 优化：短路优化
-}
 
 function execChecker(checker, $fields) {
   var values  = [];
