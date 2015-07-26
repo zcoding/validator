@@ -30,6 +30,9 @@ var FormValidator = function(formOrSelector, validations) {
     }
     var rules = validations[i].rules;
     rules = isArray(rules) ? rules : [rules];
+    for (var k = 0; k < rules.length; ++k) {
+      rules[k].queue = parseRules(rules[k].type);
+    }
     this.vs.push({
       $fs: $fields,
       rs: rules
@@ -84,7 +87,6 @@ function priority(v1, v2) {
  * 用花括号表示分组，因为小括号和中括号已经作为参数有用
  * @param {String} ruleString
  * @return {Array} rules
- * TODO: 使用后缀表达式的方法解析
  */
 function parseRules(ruleString) { // 假设输入为： "{A||!B}&&C"
   var wordQueue = []; // 词队列
@@ -139,7 +141,7 @@ function parseRules(ruleString) { // 假设输入为： "{A||!B}&&C"
       case '!':
         j = opStack.length - 1;
         while(j >= 0 && (opStack[j] === '||' ||  opStack[j] === '&&' || opStack[j] === '!')) {
-          if (priority(opStack[j], c)) { // 如果栈内操作符优先级比较大或相等，就出栈
+          if (priority(opStack[j], c)) { // 如果栈顶操作符优先级比较大或相等，就出栈
             exQueue.push(opStack.pop());
           } else {
             break;
@@ -174,7 +176,7 @@ function parseRules(ruleString) { // 假设输入为： "{A||!B}&&C"
       j--
     }
   }
-  console.log('转成后缀：' + exQueue);
+  // console.log('转成后缀：' + exQueue);
   return exQueue;
   // 下面两步不在这里做，直接在check函数里完成
   // 3. 读取后缀表达式队列并运算
@@ -194,21 +196,20 @@ function execChecker(checker, $fields) {
  * @method .check()
  * @override Validator.prototype.check()
  * @return {Boolean} pass or not
- * TODO: 增加对`&&`,`||`的支持
  */
 FormValidator.prototype.check = function() {
   var $form = this.$form;
   var validations = this.vs;
   var pass = true;
-  var ruleStack = [];
+  var $fields, rules;
   for (var i = 0; i < validations.length; ++i) {
-    var $fields = validations[i].$fs;
-    var rules = validations[i].rs;
+    var ruleStack = [], rule, ruleStack;
+    $fields = validations[i].$fs;
+    rules = validations[i].rs;
     for (var j = 0; j < rules.length; ++j) {
-      var rule = rules[j];
-
-      var ruleQueue = parseRules(rule.type);
-      ruleStack.splice(0, ruleStack.length); // 清空栈
+      rule = rules[j];
+      ruleQueue = rule.queue;
+      ruleStack.splice(0, ruleStack.length);
       // 现在开始解析后缀表达式
       for (var k = 0; k < ruleQueue.length; ++k) {
         var exp = ruleQueue[k];
