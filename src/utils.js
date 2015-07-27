@@ -233,3 +233,78 @@ function parseRules(ruleString) { // 假设输入为： "{A||!B}&&C"
   // 3. 读取后缀表达式队列并运算
   // 4. 优化：短路优化
 }
+
+/**
+ * getChecker
+ * 优先级：this.checkers > api.checkers > defaults.checkers
+ * @param {String} type
+ * @return {Array} [checkerFunction, params]
+ */
+function getChecker(type) {
+  var parts = type.split(':');
+  type = parts[0].replace(/length/i, 'long');
+  var checker = this.cs[type] || apiCheckers[type] || defaultCheckers[type];
+  if (!isFunction(checker)) {
+    throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
+  }
+  var params;
+  var _params = parts.slice(1);
+  switch (type) {
+    case 'long':
+      params = utils.getLengthParams(_params);
+      break;
+    case 'range':
+      params = utils.getRangeParams(_params);
+      break;
+    default:
+      params = _params;
+  }
+  return [checker, params];
+};
+
+function execChecker(checker, $fields) {
+  var values  = [];
+  for (var k = 0; k < $fields.length; ++k) {
+    values.push(utils.getValue($fields[k]));
+  }
+  checker[1].unshift(values);
+  return checker[0].apply(null, checker[1]);
+}
+
+/**
+ * 解析后缀表达式
+ * @param {Array} ruleQueue
+ * @param {Array} $fields
+ * @return {Boolean} result
+ */
+function calculateRules(ruleQueue, $fields) {
+
+  var ruleStack = [];
+  for (var k = 0; k < ruleQueue.length; ++k) {
+    var exp = ruleQueue[k];
+    switch (exp) {
+      case '&&':
+        var s2 = ruleStack.pop();
+        var s1 = ruleStack.pop();
+        var result = (getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1) && (getType(s2) === TYPE_STRING ? execChecker(getChecker.call(this, s2), $fields) : s2);
+        ruleStack.push(result);
+        break;
+      case '||':
+        var s2 = ruleStack.pop();
+        var s1 = ruleStack.pop();
+        var result = (getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1) || (getType(s2) === TYPE_STRING ? execChecker(getChecker.call(this, s2), $fields) : s2);
+        ruleStack.push(result);
+        break;
+      case '!':
+        var s1 = ruleStack.pop();
+        var result = !(getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1);
+        ruleStack.push(result);
+        break;
+      default:
+        ruleStack.push(exp);
+    }
+  }
+  var pop = ruleStack.pop();
+  return getType(pop) === TYPE_STRING ? execChecker(getChecker.call(this, pop), $fields) : pop;
+
+}

@@ -256,33 +256,105 @@ function parseRules(ruleString) { // 假设输入为： "{A||!B}&&C"
 }
 
 /**
+ * getChecker
+ * 优先级：this.checkers > api.checkers > defaults.checkers
+ * @param {String} type
+ * @return {Array} [checkerFunction, params]
+ */
+function getChecker(type) {
+  var parts = type.split(':');
+  type = parts[0].replace(/length/i, 'long');
+  var checker = this.cs[type] || apiCheckers[type] || defaultCheckers[type];
+  if (!isFunction(checker)) {
+    throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
+  }
+  var params;
+  var _params = parts.slice(1);
+  switch (type) {
+    case 'long':
+      params = utils.getLengthParams(_params);
+      break;
+    case 'range':
+      params = utils.getRangeParams(_params);
+      break;
+    default:
+      params = _params;
+  }
+  return [checker, params];
+};
+
+function execChecker(checker, $fields) {
+  var values  = [];
+  for (var k = 0; k < $fields.length; ++k) {
+    values.push(utils.getValue($fields[k]));
+  }
+  checker[1].unshift(values);
+  return checker[0].apply(null, checker[1]);
+}
+
+/**
+ * 解析后缀表达式
+ * @param {Array} ruleQueue
+ * @param {Array} $fields
+ * @return {Boolean} result
+ */
+function calculateRules(ruleQueue, $fields) {
+
+  var ruleStack = [];
+  for (var k = 0; k < ruleQueue.length; ++k) {
+    var exp = ruleQueue[k];
+    switch (exp) {
+      case '&&':
+        var s2 = ruleStack.pop();
+        var s1 = ruleStack.pop();
+        var result = (getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1) && (getType(s2) === TYPE_STRING ? execChecker(getChecker.call(this, s2), $fields) : s2);
+        ruleStack.push(result);
+        break;
+      case '||':
+        var s2 = ruleStack.pop();
+        var s1 = ruleStack.pop();
+        var result = (getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1) || (getType(s2) === TYPE_STRING ? execChecker(getChecker.call(this, s2), $fields) : s2);
+        ruleStack.push(result);
+        break;
+      case '!':
+        var s1 = ruleStack.pop();
+        var result = !(getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1);
+        ruleStack.push(result);
+        break;
+      default:
+        ruleStack.push(exp);
+    }
+  }
+  var pop = ruleStack.pop();
+  return getType(pop) === TYPE_STRING ? execChecker(getChecker.call(this, pop), $fields) : pop;
+
+}
+
+/**
  * @constructor
  * @class Validator
  * @param {Array|Object} validations
  */
 function Validator(validations) {
-  this.cs = {};
-
   validations = validations || [];
-
+  this.cs = {};
   this.vs = [];
   if (!isArray(validations)) {
     validations = [validations];
   }
-  for (var i = 0, len = validations.length; i < len; ++i) {
+  for (var i = 0; i < validations.length; ++i) {
     var fields = validations[i].field;
     if (!isArray(fields)) {
       fields = [fields];
     }
-    var $field = [];
-    for (var j = 0; j < fields.length; ++j) {
-      $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]);
-    }
     var rules = validations[i].rules;
     rules = isArray(rules) ? rules : [rules];
+    for (var k = 0; k < rules.length; ++k) {
+      rules[k].queue = parseRules(rules[k].type);
+    }
     this.vs.push({
-      $field: $field,
-      rules: rules
+      $fs: fields,
+      rs: rules
     });
   }
 };
@@ -305,20 +377,20 @@ vprtt.add = function(rules) {
         break;
       case TYPE_STRING:
         var self = this;
-        // TODO: 解析规则
+        // TODO: 解析规则（在这里解析规则，意味着.check()的时候不需要再解析，所以.add()方法应该总是在初始化配置之前执行）
         // var ruleQueue;
         // try {
         //   ruleQueue = parseRules(checker);
         // } catch(error) {
         //   throw new Error("Cannot parse rule expression.");
         // }
-        // callback = function(values) {
-          // var realChecker = self.cs[checker] || apiCheckers[checker] || defaultCheckers[checker];
-          // if (typeof realChecker === TYPE_UNDEFINED) {
-          //   throw new TypeError('Cannot find checker: ' + checker);
-          // }
-          // return realChecker(values);
-        // };
+        callback = function(values) {
+          var realChecker = self.cs[checker] || apiCheckers[checker] || defaultCheckers[checker];
+          if (typeof realChecker === TYPE_UNDEFINED) {
+            throw new TypeError('Cannot find checker: ' + checker);
+          }
+          return realChecker(values);
+        };
         break;
       case TYPE_REGEXP:
         callback = function(values) {
@@ -358,7 +430,24 @@ vprtt.add = function(rules) {
  * @return {Boolean} pass or not
  */
 vprtt.check = function() {
-  return this;
+  var pass = true;
+  var validations = this.vs;
+  for (var i = 0; i < validations.length; ++i) {
+    var $fields = validations[i].$fs;
+    var rules = validations[i].rs;
+    for (var j = 0; j < rules.length; ++j) {
+      var rule = rules[j];
+      // 现在开始解析后缀表达式
+      pass = calculateRules.call(this, rule.queue, $fields);
+      if (!pass) {
+        var context = $fields.length < 2 ? $fields[0] : $fields;
+        rule.fail.call(context);
+        break; // HACK: 也许应该支持不跳出：这样就是每次都检查所有的域的所有规则
+      }
+    }
+    if (!pass) break;
+  }
+  return pass;
 };
 
 /**
@@ -375,10 +464,10 @@ vprtt.remove = function(rules) {
   }
   if (isArray(rules)) {
     for (var i = 0, len = rules.length; i < len; ++i) {
-      removeRule(rules[i]);
+      removeRule.call(this, rules[i]);
     }
   } else {
-    removeRule(rules);
+    removeRule.call(this, rules);
   }
   return this;
 };
@@ -646,14 +735,17 @@ Validator.api = function(rules) {
  * @extends Validator
  * @param {HTMLElement|String} formOrSelector
  * @param {Object|Array} validations
+ * TODO: 增加对checkbox,radio的支持
  */
 var FormValidator = function(formOrSelector, validations) {
-  this.vs = []; // 必须！
+  this.vs = [];
+  this.cs = {};
   if (typeof formOrSelector === 'string') {
     this.$form = document.querySelectorAll(formOrSelector)[0]; // TODO: querySelectorAll兼容性
   } else {
     this.$form = formOrSelector;
   }
+  validations = validations || [];
   if (!isArray(validations)) {
     validations = [validations];
   }
@@ -686,98 +778,12 @@ FormValidator.prototype = new Validator();
 FormValidator.prototype.constructor = FormValidator;
 
 /**
- * getChecker
- * 优先级：this.checkers > api.checkers > defaults.checkers
- * @param {String} type
- * @return {Array} [checkerFunction, params]
- */
-function getChecker(type) {
-  var parts = type.split(':');
-  type = parts[0].replace(/length/i, 'long');
-  var checker = this.cs[type] || apiCheckers[type] || defaultCheckers[type];
-  if (!isFunction(checker)) {
-    throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
-  }
-  var params;
-  var _params = parts.slice(1);
-  switch (type) {
-    case 'long':
-      params = utils.getLengthParams(_params);
-      break;
-    case 'range':
-      params = utils.getRangeParams(_params);
-      break;
-    default:
-      params = _params;
-  }
-  return [checker, params];
-};
-
-function execChecker(checker, $fields) {
-  var values  = [];
-  for (var k = 0; k < $fields.length; ++k) {
-    values.push(utils.getValue($fields[k]));
-  }
-  checker[1].unshift(values);
-  return checker[0].apply(null, checker[1]);
-}
-
-/**
  * @method .check()
  * @override Validator.prototype.check()
  * @return {Boolean} pass or not
  */
-FormValidator.prototype.check = function() {
-  var $form = this.$form;
-  var validations = this.vs;
-  var pass = true;
-  var $fields, rules;
-  for (var i = 0; i < validations.length; ++i) {
-    var ruleStack = [], rule, ruleStack;
-    $fields = validations[i].$fs;
-    rules = validations[i].rs;
-    for (var j = 0; j < rules.length; ++j) {
-      rule = rules[j];
-      ruleQueue = rule.queue;
-      ruleStack.splice(0, ruleStack.length);
-      // 现在开始解析后缀表达式
-      for (var k = 0; k < ruleQueue.length; ++k) {
-        var exp = ruleQueue[k];
-        switch (exp) {
-          case '&&':
-            var s2 = ruleStack.pop();
-            var s1 = ruleStack.pop();
-            var result = (getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1) && (getType(s2) === TYPE_STRING ? execChecker(getChecker.call(this, s2), $fields) : s2);
-            ruleStack.push(result);
-            break;
-          case '||':
-            var s2 = ruleStack.pop();
-            var s1 = ruleStack.pop();
-            var result = (getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1) || (getType(s2) === TYPE_STRING ? execChecker(getChecker.call(this, s2), $fields) : s2);
-            ruleStack.push(result);
-            break;
-          case '!':
-            var s1 = ruleStack.pop();
-            var result = !(getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1);
-            ruleStack.push(result);
-            break;
-          default:
-            ruleStack.push(exp);
-        }
-      }
-      var pop = ruleStack.pop();
-      pass = getType(pop) === TYPE_STRING ? execChecker(getChecker.call(this, pop), $fields) : pop;
-      if (!pass) {
-        var context = $fields.length < 2 ? $fields[0] : $fields;
-        rule.fail.call(context, $form);
-        break;  // HACK: 也许应该支持不跳出：这样就是每次都检查所有的域的所有规则
-      }
-
-    }
-    if (!pass) break;
-  }
-  return pass;
-};
+// FormValidator.prototype.check = function() {
+// };
 
 
 exports.Validator = Validator;

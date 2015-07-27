@@ -93,7 +93,8 @@ validator.add({
 ```
 
 ##Validator VS FormValidator
-FormValidator是Validator的一个子类
+FormValidator是Validator的一个子类，它们的不同之处包括但不限于以下几点：
+###支持的验证规则不同
 FormValidator重写了`.check`方法，并且支持只有表单才具备的验证条件，例如
 ```javascript
 // 假设fieldA是一个checkbox或者radio
@@ -108,6 +109,8 @@ FormValidator重写了`.check`方法，并且支持只有表单才具备的验�
   }
 }
 ```
+###初始化配置不同
+FormValidator在初始化配置的时候需要传表单元素，并通过name或者data-name属性获取表单元素。而Validator在初始化配置的时候每个配置内都需要传一个元素
 
 ##内建规则
 ###`empty`

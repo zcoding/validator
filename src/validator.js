@@ -4,28 +4,25 @@
  * @param {Array|Object} validations
  */
 function Validator(validations) {
-  this.cs = {};
-
   validations = validations || [];
-
+  this.cs = {};
   this.vs = [];
   if (!isArray(validations)) {
     validations = [validations];
   }
-  for (var i = 0, len = validations.length; i < len; ++i) {
+  for (var i = 0; i < validations.length; ++i) {
     var fields = validations[i].field;
     if (!isArray(fields)) {
       fields = [fields];
     }
-    var $field = [];
-    for (var j = 0; j < fields.length; ++j) {
-      $field.push(this.$form.querySelectorAll('[name=' + fields[j] + ']')[0]);
-    }
     var rules = validations[i].rules;
     rules = isArray(rules) ? rules : [rules];
+    for (var k = 0; k < rules.length; ++k) {
+      rules[k].queue = parseRules(rules[k].type);
+    }
     this.vs.push({
-      $field: $field,
-      rules: rules
+      $fs: fields,
+      rs: rules
     });
   }
 };
@@ -48,7 +45,7 @@ vprtt.add = function(rules) {
         break;
       case TYPE_STRING:
         var self = this;
-        // TODO: 解析规则
+        // TODO: 解析规则（在这里解析规则，意味着.check()的时候不需要再解析，所以.add()方法应该总是在初始化配置之前执行）
         // var ruleQueue;
         // try {
         //   ruleQueue = parseRules(checker);
@@ -101,7 +98,24 @@ vprtt.add = function(rules) {
  * @return {Boolean} pass or not
  */
 vprtt.check = function() {
-  return this;
+  var pass = true;
+  var validations = this.vs;
+  for (var i = 0; i < validations.length; ++i) {
+    var $fields = validations[i].$fs;
+    var rules = validations[i].rs;
+    for (var j = 0; j < rules.length; ++j) {
+      var rule = rules[j];
+      // 现在开始解析后缀表达式
+      pass = calculateRules.call(this, rule.queue, $fields);
+      if (!pass) {
+        var context = $fields.length < 2 ? $fields[0] : $fields;
+        rule.fail.call(context);
+        break; // HACK: 也许应该支持不跳出：这样就是每次都检查所有的域的所有规则
+      }
+    }
+    if (!pass) break;
+  }
+  return pass;
 };
 
 /**
@@ -118,10 +132,10 @@ vprtt.remove = function(rules) {
   }
   if (isArray(rules)) {
     for (var i = 0, len = rules.length; i < len; ++i) {
-      removeRule(rules[i]);
+      removeRule.call(this, rules[i]);
     }
   } else {
-    removeRule(rules);
+    removeRule.call(this, rules);
   }
   return this;
 };
