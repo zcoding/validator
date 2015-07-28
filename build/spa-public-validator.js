@@ -429,7 +429,7 @@ vprtt.add = function(rules) {
  * @method .check()
  * @return {Boolean} pass or not
  */
-vprtt.check = function() {
+vprtt.check = function(obj) {
   var pass = true;
   var validations = this.vs;
   for (var i = 0; i < validations.length; ++i) {
@@ -441,7 +441,7 @@ vprtt.check = function() {
       pass = calculateRules.call(this, rule.queue, $fields);
       if (!pass) {
         var context = $fields.length < 2 ? $fields[0] : $fields;
-        rule.fail.call(context);
+        rule.fail.call(context, obj);
         break; // HACK: 也许应该支持不跳出：这样就是每次都检查所有的域的所有规则
       }
     }
@@ -717,17 +717,7 @@ Validator.api = function(rules) {
   return Validator;
 };
 
-/**
- * @static Validator.extends()
- */
-// Validator.extend = function(constructorFunction) {
-//
-//   constructorFunction.prototype = new Validator();
-//   constructorFunction.prototype.constructor = constructorFunction;
-//
-//   return constructorFunction;
-//
-// };
+// 暂时不做扩展：没有必要做扩展了，已经够用了
 
 /**
  * @constructor
@@ -782,8 +772,9 @@ FormValidator.prototype.constructor = FormValidator;
  * @override Validator.prototype.check()
  * @return {Boolean} pass or not
  */
-// FormValidator.prototype.check = function() {
-// };
+FormValidator.prototype.check = function() {
+  return Validator.prototype.check.call(this, this.$form);
+};
 
 
 exports.Validator = Validator;

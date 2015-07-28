@@ -97,7 +97,7 @@ vprtt.add = function(rules) {
  * @method .check()
  * @return {Boolean} pass or not
  */
-vprtt.check = function() {
+vprtt.check = function(obj) {
   var pass = true;
   var validations = this.vs;
   for (var i = 0; i < validations.length; ++i) {
@@ -109,7 +109,7 @@ vprtt.check = function() {
       pass = calculateRules.call(this, rule.queue, $fields);
       if (!pass) {
         var context = $fields.length < 2 ? $fields[0] : $fields;
-        rule.fail.call(context);
+        rule.fail.call(context, obj);
         break; // HACK: 也许应该支持不跳出：这样就是每次都检查所有的域的所有规则
       }
     }

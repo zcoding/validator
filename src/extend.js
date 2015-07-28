@@ -1,11 +1,1 @@
-/**
- * @static Validator.extends()
- */
-// Validator.extend = function(constructorFunction) {
-//
-//   constructorFunction.prototype = new Validator();
-//   constructorFunction.prototype.constructor = constructorFunction;
-//
-//   return constructorFunction;
-//
-// };
+// 暂时不做扩展：没有必要做扩展了，已经够用了

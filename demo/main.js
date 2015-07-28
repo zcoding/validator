@@ -3,8 +3,12 @@ var validationConfig = [
   {
     field: 'name',
     rules: [{                           // 两个规则，按先后顺序验证
-      type: '!empty',                  // 验证类型：非空
-      fail: normalFail('昵称不能为空')  // 验证失败回调
+      type: '!empty',                   // 验证类型：非空
+      fail: function(form) {           // 验证失败回调
+        this.classList.add('error');
+        console.dir(form);
+        alert('昵称不能为空');
+      }
     }, {
       type: 'length:(5,12]',            // 验证类型：长度限制在6到12个字符
       fail: normalFail('昵称6到12个中/英文字符')

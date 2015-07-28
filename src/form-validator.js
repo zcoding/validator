@@ -51,5 +51,6 @@ FormValidator.prototype.constructor = FormValidator;
  * @override Validator.prototype.check()
  * @return {Boolean} pass or not
  */
-// FormValidator.prototype.check = function() {
-// };
+FormValidator.prototype.check = function() {
+  return Validator.prototype.check.call(this, this.$form);
+};
