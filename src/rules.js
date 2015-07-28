@@ -80,7 +80,7 @@ function empty(values) {
     }
   }
   return pass;
-};
+}
 
 /**
  * defaults.checkers: length check
@@ -99,7 +99,7 @@ function long(values, min, max) {
     }
   }
   return pass;
-};
+}
 
 /**
  * defaults.check: number range check
@@ -121,4 +121,4 @@ function range(values, leftEqual, min, max, rightEqual) {
     }
   }
   return pass;
-};
+}
