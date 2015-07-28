@@ -9,10 +9,18 @@ var apiCheckers = {};
  */
 var is = Validator.is = function(ruleName, value) {
   var checker = apiCheckers[ruleName] || defaultCheckers[ruleName];
-  if (!isFunction(checker)) {
-    throw new TypeError('Checker for ' + ruleName + ' is not defined.');
+  var result;
+  switch(getType(checker)) {
+    case TYPE_ARRAY:
+      result = calculateRules.call(this, checker, value, true);
+      break;
+    case TYPE_FUNCTION:
+      result = checker(value);
+      break;
+    default:
+      throw new TypeError('Checker for ' + ruleName + ' is not defined.');
   }
-  return checker(value);
+  return result;
 };
 
 /**
@@ -22,15 +30,12 @@ var is = Validator.is = function(ruleName, value) {
  * @return {Boolean} is or not
  */
 var not = Validator.not = function(ruleName, value) {
-  var checker = apiCheckers[ruleName] || defaultCheckers[ruleName];
-  if (!isFunction(checker)) {
-    throw new TypeError('Checker for ' + ruleName + ' is not defined.');
-  }
-  return !checker(value);
+  return !is(ruleName, value);
 };
 
 /**
  * This helper helps to regist default checkers, `is` api and `not` api
+ * 所有的defaultCheckers都是函数
  * @param {String} name
  * @param {Object} matcher
  */
@@ -65,24 +70,25 @@ for (var m in defaultMatchers) {
  * @param {String} type
  * @param {String|RegExp|Function} checker
  * checker可以是字符串，正则表达式，或者函数
- * 当checker是字符串时，表示基于内建的规则添加的新规则（其实完全可以用内建规则实现）
- * 当checker是正则表达式时，表示一条通过该正则表达式测试的规则
- * 当checker是函数时，该函数的返回值必须是布尔
+ * 当checker是字符串时，表示基于内建规则组合（表达式）的新规则
+ * 当checker是正则表达式时，表示一条规则，它必须通过该正则表达式的完全匹配
+ * 当checker是函数时，该函数的返回值必须是布尔型
  * This function may throw a `TypeError` if checker's type is not support.
  */
 function registApiChecker(type, checker) {
   var callback;
   switch(getType(checker)) {
     case TYPE_STRING:
-      // TODO: 这里还要解析规则
-      var parts = checker.split(':');
-      var _checker = defaultCheckers[parts[0]];
-      if (typeof _checker === TYPE_UNDEFINED) {
-        throw new TypeError('Checker ' + parts[0] + ' is not defined.');
+      // TODO: 解析规则，生成的是一个后缀表达式（队列）
+      // 只能使用defaultCheckers，如果defaultCheckers里没有，就抛出异常
+      // 此处不直接生成checker函数，而是把表达式解析成后缀形式（队列存储），在验证的时候（执行.check()或者Validator.is()/Validator.not()时）再执行表达式运算
+      var queue;
+      try {
+        queue = parseRules(checker);
+      } catch(err) {
+        throw new Error(err);
       }
-      callback = function(value) {
-        return _checker.call(this, parts.slice(1));
-      };
+      callback = queue;
       break;
     case TYPE_REGEXP:
       callback = function(value) {
@@ -99,20 +105,17 @@ function registApiChecker(type, checker) {
 }
 
 /**
- * @static Validator.api(type, apiName, checker)
- * TODO: 修改参数列表，只接收一个参数
- * @param {Array|Object} rules
+ * @static Validator.api(rules)
+ * @param {Object} rules
  * @return Validator
  */
 Validator.api = function(rules) {
 
-  if (isArray(rules)) {
-    for (var i = 0; i < rules.length; ++i) {
-      registApiChecker.call(this, rules[i]);
+  for (var name in rules) {
+    if (hasOwn.call(rules, name)) {
+      registApiChecker.call(this, name, rules[name]);
     }
-  } else {
-    registApiChecker.call(this, rules);
   }
+  return this;
 
-  return Validator;
 };

@@ -49,9 +49,9 @@ function isFunction(obj) {
  * @param {HTMLElement} htmlElement
  * @return {String} value of htmlElement
  */
-utils.getValue = function(htmlElement) {
+function getValue(htmlElement) {
   return htmlElement.value || htmlElement.getAttribute('data-value') || '';
-};
+}
 
 /**
  * 解析length规则的参数
@@ -229,21 +229,28 @@ function parseRules(ruleString) { // 假设输入为： "{A||!B}&&C"
   }
   // console.log('转成后缀：' + exQueue);
   return exQueue;
-  // 下面两步不在这里做，直接在check函数里完成
-  // 3. 读取后缀表达式队列并运算
-  // 4. 优化：短路优化
 }
 
 /**
- * getChecker
- * 优先级：this.checkers > api.checkers > defaults.checkers
+ * execute checker
  * @param {String} type
- * @return {Array} [checkerFunction, params]
+ * @param {Array} values
+ * @param {Boolean} isApi
+ * @return {Boolean} result
  */
-function getChecker(type) {
+function execFn(type, values, isApi) {
   var parts = type.split(':');
   type = parts[0].replace(/length/i, 'long');
-  var checker = this.cs[type] || apiCheckers[type] || defaultCheckers[type];
+  var checker = isApi ? apiCheckers[type] || defaultCheckers[type] : this.cs[type] || apiCheckers[type] || defaultCheckers[type];
+  // checker可能不是函数，checker可能是由另外一些规则组成的表达式，所以要继续计算
+  // switch(getType(checker)) {
+  //   case TYPE_STRING:
+  //     break;
+  //   case TYPE_FUNCTION:
+  //     break;
+  //   default:
+  //     throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
+  // }
   if (!isFunction(checker)) {
     throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
   }
@@ -259,45 +266,45 @@ function getChecker(type) {
     default:
       params = _params;
   }
-  return [checker, params];
-};
-
-function execChecker(checker, $fields) {
-  var values  = [];
-  for (var k = 0; k < $fields.length; ++k) {
-    values.push(utils.getValue($fields[k]));
+  if (isApi) {
+    params.unshift(values);
+  } else {
+    var _values  = [];
+    for (var k = 0; k < values.length; ++k) {
+      _values.push(getValue(values[k]));
+    }
+    params.unshift(_values);
   }
-  checker[1].unshift(values);
-  return checker[0].apply(null, checker[1]);
+  return checker.apply(null, params);
 }
 
 /**
- * 解析后缀表达式
+ * 解析API后缀表达式
  * @param {Array} ruleQueue
- * @param {Array} $fields
+ * @param {Array} values
  * @return {Boolean} result
  */
-function calculateRules(ruleQueue, $fields) {
+function calculateRules(ruleQueue, values, isApi) {
 
   var ruleStack = [];
   for (var k = 0; k < ruleQueue.length; ++k) {
     var exp = ruleQueue[k];
     switch (exp) {
       case '&&':
-        var s2 = ruleStack.pop();
-        var s1 = ruleStack.pop();
-        var result = (getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1) && (getType(s2) === TYPE_STRING ? execChecker(getChecker.call(this, s2), $fields) : s2);
+        var s2 = ruleStack.pop()
+          , s1 = ruleStack.pop();
+        var result = (getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1) && (getType(s2) === TYPE_STRING ? execFn.call(this, s2, values, isApi) : s2);
         ruleStack.push(result);
         break;
       case '||':
-        var s2 = ruleStack.pop();
-        var s1 = ruleStack.pop();
-        var result = (getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1) || (getType(s2) === TYPE_STRING ? execChecker(getChecker.call(this, s2), $fields) : s2);
+        var s2 = ruleStack.pop()
+          , s1 = ruleStack.pop();
+        var result = (getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1) || (getType(s2) === TYPE_STRING ? execFn.call(this, s2, values, isApi) : s2);
         ruleStack.push(result);
         break;
       case '!':
         var s1 = ruleStack.pop();
-        var result = !(getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1);
+        var result = !(getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1);
         ruleStack.push(result);
         break;
       default:
@@ -305,6 +312,6 @@ function calculateRules(ruleQueue, $fields) {
     }
   }
   var pop = ruleStack.pop();
-  return getType(pop) === TYPE_STRING ? execChecker(getChecker.call(this, pop), $fields) : pop;
+  return getType(pop) === TYPE_STRING ? execFn.call(this, pop, values, isApi) : pop;
 
 }

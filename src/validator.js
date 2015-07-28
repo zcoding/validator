@@ -34,6 +34,7 @@ var vprtt = Validator.prototype;
  * 添加自定义规则
  * @param {Object} rules
  * @return this
+ * this.checkers可以是函数，或者checker表达式队列
  */
 vprtt.add = function(rules) {
   function setRule(rule) {
@@ -45,7 +46,10 @@ vprtt.add = function(rules) {
         break;
       case TYPE_STRING:
         var self = this;
-        // TODO: 解析规则（在这里解析规则，意味着.check()的时候不需要再解析，所以.add()方法应该总是在初始化配置之前执行）
+        // TODO: 解析规则，生成的是一个后缀表达式（队列）
+        // 可以使用defaultCheckers或者apiCheckers，如果两个里面都没有，就抛出异常
+        // 此处不直接生成checker函数，而是把表达式解析成后缀形式（队列存储），在验证的时候（执行.check()时）再执行表达式运算
+
         // var ruleQueue;
         // try {
         //   ruleQueue = parseRules(checker);
@@ -106,11 +110,11 @@ vprtt.check = function(obj) {
     for (var j = 0; j < rules.length; ++j) {
       var rule = rules[j];
       // 现在开始解析后缀表达式
-      pass = calculateRules.call(this, rule.queue, $fields);
+      pass = calculateRules.call(this, rule.queue, $fields, false);
       if (!pass) {
         var context = $fields.length < 2 ? $fields[0] : $fields;
         rule.fail.call(context, obj);
-        break; // HACK: 也许应该支持不跳出：这样就是每次都检查所有的域的所有规则
+        break;
       }
     }
     if (!pass) break;

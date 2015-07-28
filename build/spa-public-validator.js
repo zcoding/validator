@@ -70,9 +70,9 @@ function isFunction(obj) {
  * @param {HTMLElement} htmlElement
  * @return {String} value of htmlElement
  */
-utils.getValue = function(htmlElement) {
+function getValue(htmlElement) {
   return htmlElement.value || htmlElement.getAttribute('data-value') || '';
-};
+}
 
 /**
  * 解析length规则的参数
@@ -250,21 +250,28 @@ function parseRules(ruleString) { // 假设输入为： "{A||!B}&&C"
   }
   // console.log('转成后缀：' + exQueue);
   return exQueue;
-  // 下面两步不在这里做，直接在check函数里完成
-  // 3. 读取后缀表达式队列并运算
-  // 4. 优化：短路优化
 }
 
 /**
- * getChecker
- * 优先级：this.checkers > api.checkers > defaults.checkers
+ * execute checker
  * @param {String} type
- * @return {Array} [checkerFunction, params]
+ * @param {Array} values
+ * @param {Boolean} isApi
+ * @return {Boolean} result
  */
-function getChecker(type) {
+function execFn(type, values, isApi) {
   var parts = type.split(':');
   type = parts[0].replace(/length/i, 'long');
-  var checker = this.cs[type] || apiCheckers[type] || defaultCheckers[type];
+  var checker = isApi ? apiCheckers[type] || defaultCheckers[type] : this.cs[type] || apiCheckers[type] || defaultCheckers[type];
+  // checker可能不是函数，checker可能是由另外一些规则组成的表达式，所以要继续计算
+  // switch(getType(checker)) {
+  //   case TYPE_STRING:
+  //     break;
+  //   case TYPE_FUNCTION:
+  //     break;
+  //   default:
+  //     throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
+  // }
   if (!isFunction(checker)) {
     throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
   }
@@ -280,45 +287,45 @@ function getChecker(type) {
     default:
       params = _params;
   }
-  return [checker, params];
-};
-
-function execChecker(checker, $fields) {
-  var values  = [];
-  for (var k = 0; k < $fields.length; ++k) {
-    values.push(utils.getValue($fields[k]));
+  if (isApi) {
+    params.unshift(values);
+  } else {
+    var _values  = [];
+    for (var k = 0; k < values.length; ++k) {
+      _values.push(getValue(values[k]));
+    }
+    params.unshift(_values);
   }
-  checker[1].unshift(values);
-  return checker[0].apply(null, checker[1]);
+  return checker.apply(null, params);
 }
 
 /**
- * 解析后缀表达式
+ * 解析API后缀表达式
  * @param {Array} ruleQueue
- * @param {Array} $fields
+ * @param {Array} values
  * @return {Boolean} result
  */
-function calculateRules(ruleQueue, $fields) {
+function calculateRules(ruleQueue, values, isApi) {
 
   var ruleStack = [];
   for (var k = 0; k < ruleQueue.length; ++k) {
     var exp = ruleQueue[k];
     switch (exp) {
       case '&&':
-        var s2 = ruleStack.pop();
-        var s1 = ruleStack.pop();
-        var result = (getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1) && (getType(s2) === TYPE_STRING ? execChecker(getChecker.call(this, s2), $fields) : s2);
+        var s2 = ruleStack.pop()
+          , s1 = ruleStack.pop();
+        var result = (getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1) && (getType(s2) === TYPE_STRING ? execFn.call(this, s2, values, isApi) : s2);
         ruleStack.push(result);
         break;
       case '||':
-        var s2 = ruleStack.pop();
-        var s1 = ruleStack.pop();
-        var result = (getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1) || (getType(s2) === TYPE_STRING ? execChecker(getChecker.call(this, s2), $fields) : s2);
+        var s2 = ruleStack.pop()
+          , s1 = ruleStack.pop();
+        var result = (getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1) || (getType(s2) === TYPE_STRING ? execFn.call(this, s2, values, isApi) : s2);
         ruleStack.push(result);
         break;
       case '!':
         var s1 = ruleStack.pop();
-        var result = !(getType(s1) === TYPE_STRING ? execChecker(getChecker.call(this, s1), $fields) : s1);
+        var result = !(getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1);
         ruleStack.push(result);
         break;
       default:
@@ -326,7 +333,7 @@ function calculateRules(ruleQueue, $fields) {
     }
   }
   var pop = ruleStack.pop();
-  return getType(pop) === TYPE_STRING ? execChecker(getChecker.call(this, pop), $fields) : pop;
+  return getType(pop) === TYPE_STRING ? execFn.call(this, pop, values, isApi) : pop;
 
 }
 
@@ -366,6 +373,7 @@ var vprtt = Validator.prototype;
  * 添加自定义规则
  * @param {Object} rules
  * @return this
+ * this.checkers可以是函数，或者checker表达式队列
  */
 vprtt.add = function(rules) {
   function setRule(rule) {
@@ -377,7 +385,10 @@ vprtt.add = function(rules) {
         break;
       case TYPE_STRING:
         var self = this;
-        // TODO: 解析规则（在这里解析规则，意味着.check()的时候不需要再解析，所以.add()方法应该总是在初始化配置之前执行）
+        // TODO: 解析规则，生成的是一个后缀表达式（队列）
+        // 可以使用defaultCheckers或者apiCheckers，如果两个里面都没有，就抛出异常
+        // 此处不直接生成checker函数，而是把表达式解析成后缀形式（队列存储），在验证的时候（执行.check()时）再执行表达式运算
+
         // var ruleQueue;
         // try {
         //   ruleQueue = parseRules(checker);
@@ -438,11 +449,11 @@ vprtt.check = function(obj) {
     for (var j = 0; j < rules.length; ++j) {
       var rule = rules[j];
       // 现在开始解析后缀表达式
-      pass = calculateRules.call(this, rule.queue, $fields);
+      pass = calculateRules.call(this, rule.queue, $fields, false);
       if (!pass) {
         var context = $fields.length < 2 ? $fields[0] : $fields;
         rule.fail.call(context, obj);
-        break; // HACK: 也许应该支持不跳出：这样就是每次都检查所有的域的所有规则
+        break;
       }
     }
     if (!pass) break;
@@ -608,10 +619,18 @@ var apiCheckers = {};
  */
 var is = Validator.is = function(ruleName, value) {
   var checker = apiCheckers[ruleName] || defaultCheckers[ruleName];
-  if (!isFunction(checker)) {
-    throw new TypeError('Checker for ' + ruleName + ' is not defined.');
+  var result;
+  switch(getType(checker)) {
+    case TYPE_ARRAY:
+      result = calculateRules.call(this, checker, value, true);
+      break;
+    case TYPE_FUNCTION:
+      result = checker(value);
+      break;
+    default:
+      throw new TypeError('Checker for ' + ruleName + ' is not defined.');
   }
-  return checker(value);
+  return result;
 };
 
 /**
@@ -621,15 +640,12 @@ var is = Validator.is = function(ruleName, value) {
  * @return {Boolean} is or not
  */
 var not = Validator.not = function(ruleName, value) {
-  var checker = apiCheckers[ruleName] || defaultCheckers[ruleName];
-  if (!isFunction(checker)) {
-    throw new TypeError('Checker for ' + ruleName + ' is not defined.');
-  }
-  return !checker(value);
+  return !is(ruleName, value);
 };
 
 /**
  * This helper helps to regist default checkers, `is` api and `not` api
+ * 所有的defaultCheckers都是函数
  * @param {String} name
  * @param {Object} matcher
  */
@@ -664,24 +680,25 @@ for (var m in defaultMatchers) {
  * @param {String} type
  * @param {String|RegExp|Function} checker
  * checker可以是字符串，正则表达式，或者函数
- * 当checker是字符串时，表示基于内建的规则添加的新规则（其实完全可以用内建规则实现）
- * 当checker是正则表达式时，表示一条通过该正则表达式测试的规则
- * 当checker是函数时，该函数的返回值必须是布尔
+ * 当checker是字符串时，表示基于内建规则组合（表达式）的新规则
+ * 当checker是正则表达式时，表示一条规则，它必须通过该正则表达式的完全匹配
+ * 当checker是函数时，该函数的返回值必须是布尔型
  * This function may throw a `TypeError` if checker's type is not support.
  */
 function registApiChecker(type, checker) {
   var callback;
   switch(getType(checker)) {
     case TYPE_STRING:
-      // TODO: 这里还要解析规则
-      var parts = checker.split(':');
-      var _checker = defaultCheckers[parts[0]];
-      if (typeof _checker === TYPE_UNDEFINED) {
-        throw new TypeError('Checker ' + parts[0] + ' is not defined.');
+      // TODO: 解析规则，生成的是一个后缀表达式（队列）
+      // 只能使用defaultCheckers，如果defaultCheckers里没有，就抛出异常
+      // 此处不直接生成checker函数，而是把表达式解析成后缀形式（队列存储），在验证的时候（执行.check()或者Validator.is()/Validator.not()时）再执行表达式运算
+      var queue;
+      try {
+        queue = parseRules(checker);
+      } catch(err) {
+        throw new Error(err);
       }
-      callback = function(value) {
-        return _checker.call(this, parts.slice(1));
-      };
+      callback = queue;
       break;
     case TYPE_REGEXP:
       callback = function(value) {
@@ -698,22 +715,19 @@ function registApiChecker(type, checker) {
 }
 
 /**
- * @static Validator.api(type, apiName, checker)
- * TODO: 修改参数列表，只接收一个参数
- * @param {Array|Object} rules
+ * @static Validator.api(rules)
+ * @param {Object} rules
  * @return Validator
  */
 Validator.api = function(rules) {
 
-  if (isArray(rules)) {
-    for (var i = 0; i < rules.length; ++i) {
-      registApiChecker.call(this, rules[i]);
+  for (var name in rules) {
+    if (hasOwn.call(rules, name)) {
+      registApiChecker.call(this, name, rules[name]);
     }
-  } else {
-    registApiChecker.call(this, rules);
   }
+  return this;
 
-  return Validator;
 };
 
 // 暂时不做扩展：没有必要做扩展了，已经够用了

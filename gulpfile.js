@@ -44,7 +44,7 @@ gulp.task('build', function() {
 
 });
 
-gulp.task('dev', function() {
+gulp.task('dev', ['build'], function() {
 
   var watcher = gulp.watch(sourcePath, ['build']);
 
