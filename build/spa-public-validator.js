@@ -263,40 +263,41 @@ function execFn(type, values, isApi) {
   var parts = type.split(':');
   type = parts[0].replace(/length/i, 'long');
   var checker = isApi ? apiCheckers[type] || defaultCheckers[type] : this.cs[type] || apiCheckers[type] || defaultCheckers[type];
-  // checker可能不是函数，checker可能是由另外一些规则组成的表达式，所以要继续计算
-  // switch(getType(checker)) {
-  //   case TYPE_STRING:
-  //     break;
-  //   case TYPE_FUNCTION:
-  //     break;
-  //   default:
-  //     throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
-  // }
-  if (!isFunction(checker)) {
-    throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
-  }
-  var params;
-  var _params = parts.slice(1);
-  switch (type) {
-    case 'long':
-      params = utils.getLengthParams(_params);
+
+  var result;
+  switch(getType(checker)) {
+    // checker可能不是函数，checker可能是由另外一些规则组成的表达式，所以要继续计算
+    case TYPE_ARRAY:
+      result = calculateRules.call(this, checker, values, isApi);
       break;
-    case 'range':
-      params = utils.getRangeParams(_params);
+    case TYPE_FUNCTION:
+      var params;
+      var _params = parts.slice(1);
+      switch (type) {
+        case 'long':
+          params = utils.getLengthParams(_params);
+          break;
+        case 'range':
+          params = utils.getRangeParams(_params);
+          break;
+        default:
+          params = _params;
+      }
+      if (isApi) {
+        params.unshift(values);
+      } else {
+        var _values  = [];
+        for (var k = 0; k < values.length; ++k) {
+          _values.push(getValue(values[k]));
+        }
+        params.unshift(_values);
+      }
+      result = checker.apply(null, params);
       break;
     default:
-      params = _params;
+      throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
   }
-  if (isApi) {
-    params.unshift(values);
-  } else {
-    var _values  = [];
-    for (var k = 0; k < values.length; ++k) {
-      _values.push(getValue(values[k]));
-    }
-    params.unshift(_values);
-  }
-  return checker.apply(null, params);
+  return result;
 }
 
 /**
@@ -728,6 +729,11 @@ Validator.api = function(rules) {
   }
   return this;
 
+};
+
+// just for test
+Validator.api.list = function() {
+  console.log(apiCheckers);
 };
 
 // 暂时不做扩展：没有必要做扩展了，已经够用了

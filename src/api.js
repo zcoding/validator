@@ -119,3 +119,8 @@ Validator.api = function(rules) {
   return this;
 
 };
+
+// just for test
+Validator.api.list = function() {
+  console.log(apiCheckers);
+};
