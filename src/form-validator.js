@@ -50,6 +50,7 @@ FormValidator.prototype.constructor = FormValidator;
  * @method .check()
  * @override Validator.prototype.check()
  * @return {Boolean} pass or not
+ * TODO: 增加对checkbox和radio的支持
  */
 FormValidator.prototype.check = function() {
   return Validator.prototype.check.call(this, this.$form);

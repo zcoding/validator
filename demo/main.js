@@ -97,13 +97,10 @@ var myForm = document.getElementById('myForm');
 var checkMyForm = new FormValidator(myForm, validationConfig);
 
 // 添加自定义规则
-checkMyForm.add([{
-  name: 'specialChar',
-  rule: /^[a-zA-Z0-9]+$/
-}, {
-  name: 'notAllEmpty', // alias
-  rule: '!empty'
-}]);
+checkMyForm.add({
+  specialChar: /^[a-zA-Z0-9]+$/,
+  notAllEmpty: '!empty'
+});
 
 // 抽取公共处理函数
 function normalFail(message) {
@@ -127,10 +124,9 @@ myForm.addEventListener('submit', function(event) {
 
 var nonForm = document.getElementById("non-form");
 var checkNonForm = new FormValidator(nonForm, validationConfig);
-checkNonForm.add([{
-  name: 'specialChar',
-  rule: /^[a-zA-Z0-9]+$/
-}]);
+checkNonForm.add({
+  specialChar: /^[a-zA-Z0-9]+$/
+});
 document.getElementById("non-form-submit").addEventListener("click", function(event) {
   event.preventDefault();
   if (!checkNonForm.check()) {
