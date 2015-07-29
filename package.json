@@ -1,6 +1,6 @@
 {
   "name": "spa-public-validator",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "spa public validator module",
   "main": "Gruntfile.js",
   "scripts": {

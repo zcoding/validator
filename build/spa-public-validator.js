@@ -377,32 +377,23 @@ var vprtt = Validator.prototype;
  * this.checkers可以是函数，或者checker表达式队列
  */
 vprtt.add = function(rules) {
-  function setRule(rule) {
-    var checker = rule.rule;
+  function setRule(name, rule) {
+    var checker = rule;
     var callback;
     switch (getType(checker)) {
       case TYPE_FUNCTION:
         callback = checker;
         break;
       case TYPE_STRING:
-        var self = this;
-        // TODO: 解析规则，生成的是一个后缀表达式（队列）
-        // 可以使用defaultCheckers或者apiCheckers，如果两个里面都没有，就抛出异常
+        // 解析规则，生成的是一个后缀表达式
+        // 可以使用defaultCheckers或者apiCheckers
         // 此处不直接生成checker函数，而是把表达式解析成后缀形式（队列存储），在验证的时候（执行.check()时）再执行表达式运算
+        try {
+          callback = parseRules(checker);
+        } catch(error) {
+          throw new Error("Cannot parse rule expression.");
+        }
 
-        // var ruleQueue;
-        // try {
-        //   ruleQueue = parseRules(checker);
-        // } catch(error) {
-        //   throw new Error("Cannot parse rule expression.");
-        // }
-        callback = function(values) {
-          var realChecker = self.cs[checker] || apiCheckers[checker] || defaultCheckers[checker];
-          if (typeof realChecker === TYPE_UNDEFINED) {
-            throw new TypeError('Cannot find checker: ' + checker);
-          }
-          return realChecker(values);
-        };
         break;
       case TYPE_REGEXP:
         callback = function(values) {
@@ -425,14 +416,13 @@ vprtt.add = function(rules) {
       default:
         throw new TypeError('Rule type not support.');
     }
-    this.cs[rule.name] = callback;
+    this.cs[name] = callback;
   }
-  if (isArray(rules)) {
-    for (var i = 0, len = rules.length; i < len; ++i) {
-      setRule.call(this, rules[i]);
+
+  for (var name in rules) {
+    if (hasOwn.call(rules, name)) {
+      setRule.call(this, name, rules[name]);
     }
-  } else {
-    setRule.call(this, rules);
   }
   return this;
 };

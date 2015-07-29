@@ -75,11 +75,10 @@ API规则就是通过Validator.api接口添加的规则
 ###实例规则（自定义规则）
 
 ##添加自定义规则
-###`.add()`
+###`.add(rules)`
 ```javascript
 validator.add({
-  name: 'notAllEmpty',
-  rule: function(values) { // 需要的规则是：不是全部为空时通过（返回true），全部为空时不通过（返回false）
+  notAllEmpty: function(values) { // 需要的规则是：不是全部为空时通过（返回true），全部为空时不通过（返回false）
     var notAllEmpty = false;
     for (var i = 0, len = values.length; i < len; ++i) {
       if (Validator.is.empty(values[i])) {
