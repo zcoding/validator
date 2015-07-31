@@ -4,19 +4,16 @@
 
 // 为了兼容不支持querySelectorAll的浏览器，同时又不需要使用jQuery，使用原生API获取元素
 // 只是为了获取特定元素，所以只支持简单的选择器
-// 1. id选择器
-// 2. 类选择器
-// 3. 标签选择器
-// 4. 属性选择器
 
 /**
- * query selector
+ * query inputs
  * 这个函数是不完整的！不公开使用
- * @param {String} selector
+ * @param {HTMLElement} form
  * @return {Array} element list
  */
-var query = function(selector) {
-  
+var queryInputs = function(form) {
+  // var inputs = form.getElementsByTagName('input');
+  // var textareas = form.getElementsByTagName('textarea');
 };
 
 // shortcut
@@ -567,6 +564,8 @@ function empty(values) {
  */
 function long(values, min, max) {
   var pass = true;
+  min = min || -Infinity;
+  max = max || Infinity;
   for (var i = 0; i < values.length; ++i) {
     var length = values[i].length;
     if (length < min || length > max) {
@@ -634,6 +633,8 @@ var not = Validator.not = function(ruleName, value) {
   return !is(ruleName, value);
 };
 
+// TODO: 增加Validator.has()
+
 /**
  * This helper helps to regist default checkers, `is` api and `not` api
  * 所有的defaultCheckers都是函数
@@ -644,8 +645,21 @@ function registDefaultCheckers(name, matcher) {
   var callback;
   switch(getType(matcher)) {
     case TYPE_REGEXP:
+      // value may be an array or string
       callback = function(value) {
-        return matcher.test(value);
+        var pass;
+        if (isArray(value)) {
+          pass = true;
+          for (var i = 0; i < value.length; ++i) {
+            if (!matcher.test(value[i])) {
+              pass = false;
+              break;
+            }
+          }
+        } else {
+          pass = matcher.test(value);
+        }
+        return pass;
       };
       break;
     case TYPE_FUNCTION:
@@ -680,7 +694,7 @@ function registApiChecker(type, checker) {
   var callback;
   switch(getType(checker)) {
     case TYPE_STRING:
-      // TODO: 解析规则，生成的是一个后缀表达式（队列）
+      // 解析规则，生成的是一个后缀表达式（队列）
       // 只能使用defaultCheckers，如果defaultCheckers里没有，就抛出异常
       // 此处不直接生成checker函数，而是把表达式解析成后缀形式（队列存储），在验证的时候（执行.check()或者Validator.is()/Validator.not()时）再执行表达式运算
       var queue;
@@ -693,7 +707,18 @@ function registApiChecker(type, checker) {
       break;
     case TYPE_REGEXP:
       callback = function(value) {
-        return checker.test(value);
+        var pass = true;
+        if (isArray(value))  {
+          for (var i = 0; i < value.length; ++i) {
+            if (!checker.test(value[i])) {
+              pass = false;
+              break;
+            }
+          }
+        } else {
+          pass = checker.test(value);
+        }
+        return pass;
       }
       break;
     case TYPE_FUNCTION:
@@ -780,6 +805,7 @@ FormValidator.prototype.constructor = FormValidator;
  * @method .check()
  * @override Validator.prototype.check()
  * @return {Boolean} pass or not
+ * TODO: 增加对checkbox和radio的支持
  */
 FormValidator.prototype.check = function() {
   return Validator.prototype.check.call(this, this.$form);

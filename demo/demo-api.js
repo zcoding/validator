@@ -14,6 +14,8 @@ Validator.api({
   pname: 'length:(,20)&&email' // 注意这是一个用内置规则定义的api规则
 });
 
+// TODO: 现在不支持用API规则定义API规则，或者自定义规则定义自定义规则
+
 console.log(Validator.is('graterThan5', ['1', '5']));
 console.log(Validator.not('graterThan5', ['1', '5']));
 
@@ -42,6 +44,7 @@ checkMe.add({
   kname: 'sname||url' // 注意这是一个用API规则和内置规则组合成的实例规则
   // 这里会把sname解析为 ['QQ', 'length:(3,5)', 'nickName', '&&' '||']，这样执行check的时候就不用再解析了
   // TODO: 现在不支持用API规则定义API规则，所以只需要解析一次
+  // 假设有一个自定义规则，由API规则和内置规则组成，在添加的时候就已经把它完全转换为内置规则或者一个函数
 });
 
 myForm.addEventListener('submit', function(event) {

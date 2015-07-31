@@ -91,6 +91,8 @@ function empty(values) {
  */
 function long(values, min, max) {
   var pass = true;
+  min = min || -Infinity;
+  max = max || Infinity;
   for (var i = 0; i < values.length; ++i) {
     var length = values[i].length;
     if (length < min || length > max) {

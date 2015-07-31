@@ -33,6 +33,8 @@ var not = Validator.not = function(ruleName, value) {
   return !is(ruleName, value);
 };
 
+// TODO: 增加Validator.has()
+
 /**
  * This helper helps to regist default checkers, `is` api and `not` api
  * 所有的defaultCheckers都是函数
@@ -43,8 +45,21 @@ function registDefaultCheckers(name, matcher) {
   var callback;
   switch(getType(matcher)) {
     case TYPE_REGEXP:
+      // value may be an array or string
       callback = function(value) {
-        return matcher.test(value);
+        var pass;
+        if (isArray(value)) {
+          pass = true;
+          for (var i = 0; i < value.length; ++i) {
+            if (!matcher.test(value[i])) {
+              pass = false;
+              break;
+            }
+          }
+        } else {
+          pass = matcher.test(value);
+        }
+        return pass;
       };
       break;
     case TYPE_FUNCTION:
@@ -79,7 +94,7 @@ function registApiChecker(type, checker) {
   var callback;
   switch(getType(checker)) {
     case TYPE_STRING:
-      // TODO: 解析规则，生成的是一个后缀表达式（队列）
+      // 解析规则，生成的是一个后缀表达式（队列）
       // 只能使用defaultCheckers，如果defaultCheckers里没有，就抛出异常
       // 此处不直接生成checker函数，而是把表达式解析成后缀形式（队列存储），在验证的时候（执行.check()或者Validator.is()/Validator.not()时）再执行表达式运算
       var queue;
@@ -92,7 +107,18 @@ function registApiChecker(type, checker) {
       break;
     case TYPE_REGEXP:
       callback = function(value) {
-        return checker.test(value);
+        var pass = true;
+        if (isArray(value))  {
+          for (var i = 0; i < value.length; ++i) {
+            if (!checker.test(value[i])) {
+              pass = false;
+              break;
+            }
+          }
+        } else {
+          pass = checker.test(value);
+        }
+        return pass;
       }
       break;
     case TYPE_FUNCTION:
