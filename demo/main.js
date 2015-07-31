@@ -69,7 +69,9 @@ var validationConfig = [
   }, {
     field: ['email', 'address'],
     rules: {
-      type: '!empty', // HACK: empty的参数是数组，表示所有都不为空，前面加`!``运算符，表示的是并不是所有都不为空（不代表每个都不能为空）
+      type: '!empty',
+       // HACK: empty的参数是数组，表示所有都不为空，前面加`!``运算符，表示的是并不是所有都不为空（不代表每个都不能为空）
+       // TODO: 这里是错的，预期应该是所有都不为空
       fail: function(form) {
         var fields = this;
         for (var i = 0, len = fields.length; i < len; ++i) {
