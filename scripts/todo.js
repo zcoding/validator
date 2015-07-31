@@ -117,3 +117,67 @@ myChecker.add({
 // 例如：规则为email||nickName，传入['wuzijie@163.com', 'wuzijie']，应该分别验证'wuzijie@163.com'和'wuzijie'是否满足email||nickName，这里返回true
 // 如果规则本身就是组合成的，也是同理
 // 例如：规则validName&&length:(10,20)，传入['wuzijie@163.com', 'wuzijie']，应该分别验证'wuzijie@163.com'和'wuzijie'是否满足{email||nickName}&&length:(10,20)，这里返回false，因为第二个不满足
+
+// ================================================================================================================== //
+[{
+  type: 'ANotEmpty&&BNotEmpty', // 注意这里没有field，因为field已经包含在条件里了
+  fail: function() {
+    alert('A，B必选一个');
+  }
+}, {
+  field: 'A1',
+  if: 'ANotEmpty' // 只有当满足`ANotEmpty`这个条件时才会触发这个验证
+  rules: {
+    type: '!empty',
+    fail: function() {}
+  }
+}, {
+  field: 'A2',
+  if: 'ANotEmpty&&dyCondition' // 这个条件对整个A2域的所有规则起作用
+  rules: {
+    type: 'nickName',
+    fail: function() {}
+  }
+}, {
+  field: 'B1',
+  rules: {
+    type: 'email||nickName',
+    fail: function() {}
+  }
+}, {
+  field: 'B2',
+  rules: [{
+    type: 'email||nickName',
+    fail: function() {}
+  }, {
+    type: 'length:(,20]',
+    if: 'B1TooLong', // 可以把条件限制只对某个规则起作用
+    fail: function() {
+      // B1本身是不限制长度的，但是一旦B1的长度超过20，就限制B2的长度不能超过20；如果B1长度不超过20，那么B2也是不限制长度的
+      alert('B1长度太长，B2不能超过20个字符');
+    }
+  }]
+}]
+
+// 添加条件，支持条件验证
+// 条件可以是动态的或者静态的，使用表单域的条件都是动态条件
+// 条件本身就可以作为验证规则进行验证
+// 在执行一次.check()的时候，动态条件应该只执行一次，然后缓存成静态。验证时按照域顺序进行的，所以每次验证一个域的时候都会触发条件判断，但条件时不需要重新计算的。
+myChecker.condition({
+  ANotEmpty: { // 这是一个用表单域定义的动态条件，在运行时运算。为了避免重复运算，条件应该缓存
+    field: ['A1', 'A2', 'A3'],
+    rules: '!empty'
+  }
+  , BNotEmpty: {
+    field: ['B1', 'B2', 'B3'],
+    rules: '!empty'
+  }
+  , B1TooLong: {
+    field: 'B1',
+    rules: 'length:(20,)'
+  }
+  , stCondition: true // 这是一个静态条件
+  , dyCondition: function() { // 这是一个动态条件，在运行时执行一次
+    return false;
+  }
+});
