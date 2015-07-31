@@ -237,6 +237,7 @@ function parseRules(ruleString) { // 假设输入为： "{A||!B}&&C"
  * @param {Array} values
  * @param {Boolean} isApi
  * @return {Boolean} result
+ * TODO:所有的checker都将传入一个values数组作为参数，但是返回值不同，可能返回布尔矩阵（数组），或者布尔值
  */
 function execFn(type, values, isApi) {
   var parts = type.split(':');
@@ -280,10 +281,11 @@ function execFn(type, values, isApi) {
 }
 
 /**
- * 解析API后缀表达式
+ * 执行后缀表达式运算
  * @param {Array} ruleQueue
  * @param {Array} values
  * @return {Boolean} result
+ * TODO: 使用基于矩阵（数组）的与或非运算
  */
 function calculateRules(ruleQueue, values, isApi) {
 

@@ -179,6 +179,9 @@ FormValidator在初始化配置的时候需要传表单元素，并通过name或
 + `Validator.is.equal`
 + `Validator.is.long`
 + `Validator.is.range`
++ `Validator.is.ip`
++ `Validator.is.ipv4`
++ `Validator.is.ipv6`
 
 ###`Validator.not[type]`
 仅限内置规则的使用
@@ -197,6 +200,9 @@ FormValidator在初始化配置的时候需要传表单元素，并通过name或
 + `Validator.not.equal`
 + `Validator.not.long`
 + `Validator.not.range`
++ `Validator.not.ip`
++ `Validator.not.ipv4`
++ `Validator.not.ipv6`
 
 ###`Validator.api`
 这个方法在Validator底层添加验证规则

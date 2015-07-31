@@ -33,7 +33,7 @@ var not = Validator.not = function(ruleName, value) {
   return !is(ruleName, value);
 };
 
-// TODO: 增加Validator.has()
+// TODO: 增加Validator.any(),Validator.all()
 
 /**
  * This helper helps to regist default checkers, `is` api and `not` api
@@ -46,6 +46,8 @@ function registDefaultCheckers(name, matcher) {
   switch(getType(matcher)) {
     case TYPE_REGEXP:
       // value may be an array or string
+      // TODO:如果传入数组，就返回布尔数组
+      // 如果是字符串，就返回布尔值
       callback = function(value) {
         var pass;
         if (isArray(value)) {
@@ -87,7 +89,7 @@ for (var m in defaultMatchers) {
  * checker可以是字符串，正则表达式，或者函数
  * 当checker是字符串时，表示基于内建规则组合（表达式）的新规则
  * 当checker是正则表达式时，表示一条规则，它必须通过该正则表达式的完全匹配
- * 当checker是函数时，该函数的返回值必须是布尔型
+ * TODO: 当checker是函数时，该函数的返回值必须是布尔型或者布尔矩阵
  * This function may throw a `TypeError` if checker's type is not support.
  */
 function registApiChecker(type, checker) {

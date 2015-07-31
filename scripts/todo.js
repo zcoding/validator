@@ -4,7 +4,7 @@ myChecker.add({
   notAllEmpty: function(values) { // 预期：只要有一个不为空就成功，否则失败
     var pass = false;
     for (var i = 0; i < values.length; ++i) {
-      if (！Validator.is.empty(values[i])) {
+      if (!Validator.is.empty(values[i])) {
         pass = true;
         break;
       }
