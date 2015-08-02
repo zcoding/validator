@@ -173,6 +173,14 @@ FormValidator重写了`.check`方法，并且支持只有表单才具备的验�
 FormValidator在初始化配置的时候需要传表单元素，并通过name或者data-name属性获取表单元素。而Validator在初始化配置的时候每个配置内都需要传一个元素
 
 ##内建规则
+###`is:something`
++ `{type: "is:whatiwant"}` 就是字符串"whatiwant"
++ `{type: "!is:whatiwant"}` 等同于 `{type: "not:whatiwant"}`
+
+###`not:something`
++ `{type: "not:whatiwant"}` 不是字符串"whatiwant"
++ `{type: "!not:whatiwant"}` 等同于 `{type: "is:whatiwant"}`
+
 ###`empty`
 空限制
 + `{type: "!empty"}` 这是限制非空
@@ -224,7 +232,7 @@ FormValidator在初始化配置的时候需要传表单元素，并通过name或
 
 ##API
 ###`Validator.is[type]`
-仅限内置规则的使用
+仅限内置规则的使用，除了`is:something`和`not:something`
 + `Validator.is.url`
 + `Validator.is.email`
 + `Validator.is.number`
@@ -245,7 +253,7 @@ FormValidator在初始化配置的时候需要传表单元素，并通过name或
 + `Validator.is.ipv6`
 
 ###`Validator.not[type]`
-仅限内置规则的使用
+仅限内置规则的使用，除了`is:something`和`not:something`
 + `Validator.not.url`
 + `Validator.not.email`
 + `Validator.not.number`
