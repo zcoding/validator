@@ -71,6 +71,50 @@ A，B的域相互独立，即A的域验证与B的域验证相互无关。
 + 条件可以是一个布尔型的值
 + 条件可以是一个返回布尔值的函数
 
+####examples
+```javascript
+// 添加条件
+mychecker.condition({
+  ANotEmpty: { // 这是一个依赖多个表单域的动态条件
+    field: ['A1', 'A2', 'A3'],
+    rules: '!empty'
+  }
+  , B1TooLong: { // 这是一个依赖单个表单域的动态条件
+    field: 'B1',
+    rules: 'length:(20,)'
+  }
+  , stCondition: true // 这是一个静态条件
+  , dyCondition: function() { // 这是一个与表单域无关的动态条件
+    return false;
+  }
+});
+
+// 使用
+{
+  field: 'A2',
+  if: 'ANotEmpty&&dyCondition' // 这个条件对整个A2域的所有规则起作用
+  rules: {
+    type: 'nickName',
+    fail: function() {}
+  }
+}
+
+{
+  field: 'B2',
+  rules: [{
+    type: 'email||nickName',
+    fail: function() {}
+  }, {
+    type: 'length:(,20]',
+    if: 'B1TooLong', // 可以把条件限制只对某个规则起作用
+    fail: function() {
+      // B1本身是不限制长度的，但是一旦B1的长度超过20，就限制B2的长度不能超过20；如果B1长度不超过20，那么B2也是不限制长度的
+      alert('B1长度太长，B2不能超过20个字符');
+    }
+  }]
+}
+```
+
 ##规则的类型
 优先级： 实例规则 > API规则 > 内建规则
 ###内建规则
