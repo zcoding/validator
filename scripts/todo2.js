@@ -1,15 +1,15 @@
 // 关于规则的另一种定义方式
 
 {
-  field: 'A',
   rules: {
-    type: 'length:(10, 20)',
-    fail: false, // fail为false表示失败时不处理。因为这是一个条件，所以不需要处理，当条件成立时，再去验证其它规则
-    success: { // success定义当当前条件成立时需要做的验证
-      field: 'B',
+    if: 'condition1', // 这个条件没有field对应，在定义的时候也不要传value
+    success: {
+      field: 'A',
       rules: {
-        type: 'length:(20,)&&url',
-        fail: function() {}
+        if: '!empty', // 这个条件有field对应
+        fail: function() {},
+        success: {
+        }
       }
     }
   }
@@ -24,15 +24,14 @@
 {
   field: ['A1', 'A2', 'A3', 'B1', 'B2', 'B3'],
   rules: {
-    type: '!all:empty',
+    if: '!all:empty',
     fail: function() {
       alert('A,B不能同时为空');
     },
     success: [{
       field: ['A1', 'A2', 'A3'],
       rules: {
-        type: '!all:empty',
-        fail: false, // 这里就不需要失败处理了，因为A是允许全部为空的（只要同时B不是全部为空）
+        if: '!all:empty',
         success: [{ // 从这里开始验证A的域
           field: 'A1',
           rules: {
@@ -46,17 +45,16 @@
     }, {
       field: ['B1', 'B2', 'B3'],
       rules: {
-        type: '!all:empty',
-        fail: false,
+        if: '!all:empty',
         success: [{
           field: 'B1',
           rules: {
-            type: 'length:(20,)',
-            fail: false, // B1本身的长度并未限制，这只是一个用来限制B2的条件
+            if: 'length:(20,)',
             success: {
               field: 'B2',
               rules: {
-                type: 'length:(10, 20)' // 当且仅当B1长度大于20时才需要验证B2的长度不能超过20
+                if: 'length:(10, 20)', // 当且仅当B1长度大于20时才需要验证B2的长度不能超过20
+                fail: function() {}
               }
             }
           }
@@ -74,7 +72,7 @@
 var validationsA = { // 从这里开始验证A的域
   field: 'A1',
   rules: {
-    type: 'length:(5,10]&&nickName',
+    if: 'length:(5,10]&&nickName',
     fail: function() {
       alert('A1必须为6到10个字符的英文字母/数字/下划线（不能以数字开头）');
     }
@@ -84,12 +82,14 @@ var validationsA = { // 从这里开始验证A的域
 var validationsB = [{
   field: 'B1',
   rules: {
-    type: 'length:(20,)',
-    fail: false, // B1本身的长度并未限制，这只是一个用来限制B2的条件
+    if: 'length:(20,)',
     success: {
       field: 'B2',
       rules: {
-        type: 'length:(10, 20)' // 当且仅当B1长度大于20时才需要验证B2的长度不能超过20
+        if: 'length:(10, 20)', // 当且仅当B1长度大于20时才需要验证B2的长度不能超过20
+        fail: function() {
+          alert('B2长度超出范围');
+        }
       }
     }
   }
@@ -98,22 +98,20 @@ var validationsB = [{
 var validations = {
   field: ['A1', 'A2', 'A3', 'B1', 'B2', 'B3'],
   rules: {
-    type: '!all:empty',
+    if: '!all:empty',
     fail: function() {
       alert('A,B不能同时为空');
     },
     success: [{
       field: ['A1', 'A2', 'A3'],
       rules: {
-        type: '!all:empty',
-        fail: false, // 这里就不需要失败处理了，因为A是允许全部为空的（只要同时B不是全部为空）
+        if: '!all:empty',
         success: validationsA
       }
     }, {
       field: ['B1', 'B2', 'B3'],
       rules: {
-        type: '!all:empty',
-        fail: false,
+        if: '!all:empty',
         success: validationsB
       }
     }]

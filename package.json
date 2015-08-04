@@ -2,7 +2,7 @@
   "name": "spa-public-validator",
   "version": "0.4.7",
   "description": "spa public validator module",
-  "main": "Gruntfile.js",
+  "main": "index.js",
   "scripts": {
     "test": "node scripts/test.js",
     "build": "gulp build"
