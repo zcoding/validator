@@ -7,8 +7,13 @@ var zip = require('gulp-zip');
 var config = require('./package.json');
 
 var source = ['intro', 'query', 'utils', 'validator', 'rules', 'api', 'extend', 'form-validator', 'outro'];
+var source2 = ['intro', 'bool-matrix', 'utils2', 'validator2', 'rules', 'api', 'extend', 'form-validator', 'outro'];
 
 var sourcePath = source.map(function(file) {
+  return 'src/' + file + '.js';
+});
+
+var sourcePath2 = source2.map(function(file) {
   return 'src/' + file + '.js';
 });
 
@@ -31,6 +36,19 @@ moduleTypes.forEach(function(mType) {
 
 });
 
+gulp.task('build2', function() {
+
+  return gulp.src(sourcePath2)
+    .pipe(concat('spa-public-validator2.js', {newLine: '\n'}))
+    .pipe(gulp.dest('build'))
+    .pipe(sourcemaps.init())
+    .pipe(uglify())
+    .pipe(rename('spa-public-validator2.min.js'))
+    .pipe(sourcemaps.write('.'))
+    .pipe(gulp.dest('build'));
+
+});
+
 gulp.task('build', function() {
 
   return gulp.src(sourcePath)
@@ -47,6 +65,16 @@ gulp.task('build', function() {
 gulp.task('dev', ['build'], function() {
 
   var watcher = gulp.watch(sourcePath, ['build']);
+
+  watcher.on('change', function(event) {
+    console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
+  });
+
+});
+
+gulp.task('dev2', ['build2'], function() {
+
+  var watcher = gulp.watch(sourcePath2, ['build']);
 
   watcher.on('change', function(event) {
     console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
