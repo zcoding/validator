@@ -36,6 +36,7 @@ function setRule(name, rule) {
   var checker = rule;
   var callback;
   switch (getType(checker)) {
+    case TYPE_BOOLEAN:
     case TYPE_FUNCTION:
       callback = checker;
       break;

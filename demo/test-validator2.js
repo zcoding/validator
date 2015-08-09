@@ -76,6 +76,13 @@ function getField(id) {
 
 var checker = new Validator(validations);
 
+checker.add({
+  condition1: 1+2 === 3,
+  condition2: function() {
+    return 1+1 === 2;
+  }
+});
+
 getField('submit-button').addEventListener('click', function(event) {
   event.preventDefault();
   if (!checker.check()) {

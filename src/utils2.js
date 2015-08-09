@@ -8,6 +8,7 @@ var TYPE_STRING = '[object String]'
   , TYPE_ARRAY = '[object Array]'
   , TYPE_FUNCTION = '[object Function]'
   , TYPE_REGEXP = '[object RegExp]'
+  , TYPE_BOOLEAN = '[object Boolean]'
   , TYPE_UNDEFINED = 'undefined';
 
 var utils = {};
@@ -297,18 +298,22 @@ function calculateRules(ruleQueue, values, isApi) {
         var s2 = ruleStack.pop()
           , s1 = ruleStack.pop();
         // 用布尔矩阵运算，注意短路优化
-        var result = (getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1) && (getType(s2) === TYPE_STRING ? execFn.call(this, s2, values, isApi) : s2);
+        var result1 = getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1;
+        var result2 = getType(s2) === TYPE_STRING ? execFn.call(this, s2, values, isApi) : s2;
+        var result = matrix.and(result1, result2);
         ruleStack.push(result);
         break;
       case '||':
         var s2 = ruleStack.pop()
           , s1 = ruleStack.pop();
-        var result = (getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1) || (getType(s2) === TYPE_STRING ? execFn.call(this, s2, values, isApi) : s2);
+        var result1 = getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1;
+        var result2 = getType(s2) === TYPE_STRING ? execFn.call(this, s2, values, isApi) : s2;
+        var result = matrix.or(result1, result2);
         ruleStack.push(result);
         break;
       case '!':
         var s1 = ruleStack.pop();
-        var result = !(getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1);
+        var result = matrix.not(getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1);
         ruleStack.push(result);
         break;
       default:

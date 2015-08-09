@@ -74,7 +74,7 @@ gulp.task('dev', ['build'], function() {
 
 gulp.task('dev2', ['build2'], function() {
 
-  var watcher = gulp.watch(sourcePath2, ['build']);
+  var watcher = gulp.watch(sourcePath2, ['build2']);
 
   watcher.on('change', function(event) {
     console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
