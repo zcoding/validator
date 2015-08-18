@@ -2,13 +2,14 @@
 spa-public-validator是一个无依赖的、基于配置的表单验证模块。
 
 ## 配置表单验证
-以下是表单验证的基本配置结构：
+以下是表单验证配置的基本结构：
 ```javascript
 { // 当前层级
   field: $field, // 域元素，也可以是数组，或者未定义（如果未定义就是域无关的条件）
   rules: { // 也可以是数组
     if: 'conditionExpression', // 条件表达式
-    fail: function failedFunction() {}, // 验证失败的回调，回调上下文是$field
+    fail: function failedFunction() {}, // 验证失败回调，回调上下文是$field（可能是数组）
+    // fail可能未定义或者为false，此时的rules不会引起验证失败
     success: { // 也可以是数组，或者未定义（如果未定义就表明没有下一层级）
       /* 下一层级 */
     }
@@ -17,16 +18,17 @@ spa-public-validator是一个无依赖的、基于配置的表单验证模块。
 ```
 
 ### 条件表达式
-`if`通过条件表达式定义了某个层级的验证规则，条件表达式由两个部分组成：
+`if`通过条件表达式定义了某个层级的验证规则，条件表达式由三个部分组成：
 + 运算符`&&`,`||`,`!`,`{`,`}`
 + 规则字符串
++ 特殊标识`any:`,`all:`
 
 ### 规则字符串
 规则字符串是用于描述一个规则的表达式，有两种描述形式：
 1. `规则名称`
 2. `规则名称:参数列表`
 
-参数列表没有固定形式，不同的规则有自己的参数列表解释方式
+参数列表没有固定形式，不同的规则有自己的参数列表解析方法
 
 ### 一个域验证多个规则
 ```javascript
@@ -59,7 +61,10 @@ spa-public-validator是一个无依赖的、基于配置的表单验证模块。
   }
 }
 ```
-当一个域含有多个验证规则的时候，在验证的时候总是按照定义的顺序进行验证，一旦某个规则没有通过，就会立即停止验证，不会再继续后面的验证
+需要注意以下三点：
+1. 在验证的时候总是按照定义的顺序进行验证
+2. 如果当前层级没有通过或者没有定义success，就不会进入下一层级
+3. 如果当前层级没有定义fail回调，就不会引起验证失败
 
 ### 多个域验证一个规则
 有时候需要同时验证多个域是否满足一个规则，例如：判断域A和域B是否同时为空
@@ -67,7 +72,7 @@ spa-public-validator是一个无依赖的、基于配置的表单验证模块。
 {
   field: [$A, $B]
   rules: {
-    if: '!empty',
+    if: '!all:empty',
     fail: function() {
       var fields = this; // 注意：此时的this是一个数组，按照field的顺序
       for (var i = 0; i < fields.length; ++i) {
@@ -93,6 +98,8 @@ A，B的域相互独立，即A的域验证与B的域验证相互无关。
 
 添加条件和添加自定义规则的方式是一样的
 
+关于条件验证参见例子demo-condition
+
 ## 规则的类型
 优先级： 实例规则 > API规则 > 内建规则
 ### 内建规则
@@ -107,15 +114,22 @@ A，B的域相互独立，即A的域验证与B的域验证相互无关。
 Validator.is.long(value, 6, 10); // length规则的内建名称是long
 ```
 ### API规则
-API规则就是通过Validator.api接口添加的规则
+API规则就是通过Validator.api接口添加的规则，可以应用到所有Validator实例中
 
 ### 实例规则
+实例规则是通过`.add()`方法添加的规则，只对当前Validator实例有效
 
-## 添加自定义规则
+### 添加自定义规则
 API规则和实例规则都是自定义规则
-### `Validator.api(rules)`
-### `.add(rules)`
++ `Validator.api(rules)`
++ `.add(rules)`
+
 ```javascript
+// 添加API规则
+Validator.api({
+  browser: /chrome|ie|firfox|opera|safari/i
+});
+// 添加实例规则
 validator.add({
   notAllEmpty: function(values) { // 需要的规则是：不是全部为空时通过（返回true），全部为空时不通过（返回false）
     var notAllEmpty = false;
@@ -128,11 +142,12 @@ validator.add({
     return notAllEmpty;
   }
 });
+// 实例规则只能在条件表达式中使用，而API规则除了在条件表达式中使用之外，还可以通过`Validator.is`,`Validator.not`,`Validator.all`,`Validator.any`等方式调用
 ```
 
 ## Validator VS FormValidator
 FormValidator是Validator的一个子类，它们的不同之处包括但不限于以下几点：
-### 支持的验证规则不同（未完成）
+### 支持的验证规则不同
 FormValidator重写了`.check`方法，并且支持只有表单才具备的验证条件，例如
 ```javascript
 // 假设fieldA是一个checkbox或者radio
@@ -148,7 +163,7 @@ FormValidator重写了`.check`方法，并且支持只有表单才具备的验�
 }
 ```
 ### 初始化配置不同
-FormValidator在初始化配置的时候需要传表单元素，并通过name或者data-name属性获取表单元素。而Validator在初始化配置的时候每个配置内都需要传一个元素
+FormValidator在初始化配置的时候需要传表单元素，并通过name或者data-name属性获取表单元素。而Validator在初始化配置的时候每个配置内都需要元素实例
 
 ## 内建规则
 ### `is:something`

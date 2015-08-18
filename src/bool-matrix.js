@@ -95,6 +95,30 @@ var matrix = (function() {
     return result;
   };
 
+  mat.all = function(mat) {
+    var result = true;
+    if (isArray(mat)) {
+      for (var i = 0; i < mat.length; ++i) {
+        result = result && mat[i];
+      }
+    } else {
+      result = result && mat;
+    }
+    return result;
+  };
+
+  mat.any = function(mat) {
+    var result = true;
+    if (isArray(mat)) {
+      for (var i = 0; i < mat.length; ++i) {
+        result = result || mat[i];
+      }
+    } else {
+      result = result || mat;
+    }
+    return result;
+  };
+
   return mat;
 
 })();

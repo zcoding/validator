@@ -49,7 +49,13 @@ function isFunction(obj) {
  * @return {String} value of htmlElement
  */
 function getValue(htmlElement) {
-  return htmlElement.value || htmlElement.getAttribute('data-value') || '';
+  if (typeof htmlElement['value'] !== TYPE_UNDEFINED) {
+    return htmlElement.value || '';
+  } else if (typeof htmlElement['getAttribute'] !== TYPE_UNDEFINED) {
+    return htmlElement.getAttribute('data-value') || '';
+  } else {
+    return htmlElement || '';
+  }
 }
 
 /**
@@ -236,7 +242,6 @@ function parseConditionExpression(ruleString) { // 假设输入为： "{A||!B}&&
  * @param {Array} values
  * @param {Boolean} isApi
  * @return {Boolean} result
- * TODO:所有的checker都将传入一个values数组作为参数，但是返回值不同，可能返回布尔矩阵（数组），或者布尔值
  */
 function executeChecker(type, values, isApi) {
   var parts = type.split(':');
@@ -280,7 +285,7 @@ function executeChecker(type, values, isApi) {
     default:
       if (type === 'all') {
         var queue = parseConditionExpression(parts.slice(1));
-        result = calculateConditionExpression.call(this, queue, values, isApi);
+        result = matrix.val(calculateConditionExpression.call(this, queue, values, isApi));
       } else {
         throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
       }
@@ -326,7 +331,6 @@ function calculateConditionExpression(ruleQueue, values, isApi) {
     }
   }
   var pop = ruleStack.pop();
-  var expressionResult = getType(pop) === TYPE_STRING ? executeChecker.call(this, pop, values, isApi) : pop;
-  return matrix.val(expressionResult);
+  return getType(pop) === TYPE_STRING ? executeChecker.call(this, pop, values, isApi) : pop;
 
 }

@@ -89,6 +89,7 @@ getField('submit-button').addEventListener('click', function(event) {
     console.count('shit');
     return false;
   }
-  console.log('yeah~');
+  console.count('yeah~');
+  alert('全部通过');
   return false;
 }, false);

@@ -99,6 +99,30 @@ var matrix = (function() {
     return result;
   };
 
+  mat.all = function(mat) {
+    var result = true;
+    if (isArray(mat)) {
+      for (var i = 0; i < mat.length; ++i) {
+        result = result && mat[i];
+      }
+    } else {
+      result = result && mat;
+    }
+    return result;
+  };
+
+  mat.any = function(mat) {
+    var result = true;
+    if (isArray(mat)) {
+      for (var i = 0; i < mat.length; ++i) {
+        result = result || mat[i];
+      }
+    } else {
+      result = result || mat;
+    }
+    return result;
+  };
+
   return mat;
 
 })();
@@ -154,7 +178,13 @@ function isFunction(obj) {
  * @return {String} value of htmlElement
  */
 function getValue(htmlElement) {
-  return htmlElement.value || htmlElement.getAttribute('data-value') || '';
+  if (typeof htmlElement['value'] !== TYPE_UNDEFINED) {
+    return htmlElement.value || '';
+  } else if (typeof htmlElement['getAttribute'] !== TYPE_UNDEFINED) {
+    return htmlElement.getAttribute('data-value') || '';
+  } else {
+    return htmlElement || '';
+  }
 }
 
 /**
@@ -341,7 +371,6 @@ function parseConditionExpression(ruleString) { // 假设输入为： "{A||!B}&&
  * @param {Array} values
  * @param {Boolean} isApi
  * @return {Boolean} result
- * TODO:所有的checker都将传入一个values数组作为参数，但是返回值不同，可能返回布尔矩阵（数组），或者布尔值
  */
 function executeChecker(type, values, isApi) {
   var parts = type.split(':');
@@ -385,7 +414,7 @@ function executeChecker(type, values, isApi) {
     default:
       if (type === 'all') {
         var queue = parseConditionExpression(parts.slice(1));
-        result = calculateConditionExpression.call(this, queue, values, isApi);
+        result = matrix.val(calculateConditionExpression.call(this, queue, values, isApi));
       } else {
         throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
       }
@@ -431,8 +460,7 @@ function calculateConditionExpression(ruleQueue, values, isApi) {
     }
   }
   var pop = ruleStack.pop();
-  var expressionResult = getType(pop) === TYPE_STRING ? executeChecker.call(this, pop, values, isApi) : pop;
-  return matrix.val(expressionResult);
+  return getType(pop) === TYPE_STRING ? executeChecker.call(this, pop, values, isApi) : pop;
 
 }
 
@@ -661,59 +689,49 @@ function equal(values) {
 
 /**
  * defaults.checkers: empty check
- * TODO: 引入布尔矩阵运算
  * @param {String|Array} values
  * @return {Boolean|Array} 如果传入数组，就返回布尔数组；如果传入字符串，就返回布尔值
  */
 function empty(values) {
-  var pass;
+  var result;
   if (isArray(values)) {
-    pass = true;
+    result = [];
     for (var i = 0; i < values.length; ++i) {
-      if (!isEmpty(values[i])) {
-        pass = false;
-        break;
-      }
+      result.push(isEmpty(values[i]));
     }
   } else {
-    pass = isEmpty(values);
+    result = isEmpty(values);
   }
-  return pass;
+  return result;
 }
 
 /**
  * defaults.checkers: length check
- * TODO: 引入布尔矩阵运算
  * @param {Array|String} values
  * @param {Number} min
  * @param {Number} max
  * @return {Array|Boolean} 如果传入数组，就返回布尔矩阵；如果传入字符串，就返回布尔值
  */
 function long(values, min, max) {
-  var pass, length;
+  var result, length;
   min = min || -Infinity;
   max = max || Infinity;
   if (isArray(values)) {
-    pass = true;
+    result = [];
     for (var i = 0; i < values.length; ++i) {
       length = values[i].length;
-      if (length < min || length > max) {
-        pass = false;
-        break;
-      }
+      result.push(length >= min && length <= max);
     }
   } else {
     length = values.length;
-    pass = length >= min && length <= max;
+    result = length >= min && length <= max;
   }
-  return pass;
+  return result;
 }
 
 /**
  * defaults.check: number range check
  * 这个函数和long类似，但是不是用来限制长度的，而是用来限制数值本身的
- * HACK: 这个函数的五个参数缺一不可
- * HACK: values应该转成Number型，因为参数很可能是字符串，可能会引起判断错误
  * @param {Array|String} values
  * @param {Boolean} leftEqual 是否大于等于
  * @param {Number} min
@@ -722,21 +740,18 @@ function long(values, min, max) {
  * @return {Array|Boolean} 如果传入数组，就返回布尔矩阵；否则就返回布尔值
  */
 function range(values, leftEqual, min, max, rightEqual) {
-  var pass;
+  var result;
   if (isArray(values)) {
-    pass = true;
+    result = [];
     for (var i = 0; i < values.length; ++i) {
       var value = Number(values[i]);
-      if (leftEqual && value < min || rightEqual && value > max || !leftEqual && value <= min || !rightEqual && value >= max) {
-        pass = false;
-        break;
-      }
+      result.push((leftEqual && value >= min || !leftEqual && value > min) && (rightEqual && value <= max || !rightEqual && value < max));
     }
   } else {
     values = Number(values);
-    pass = (leftEqual && values >= min || !leftEqual && values > min) && (rightEqual && values <= max || !rightEqual && values < max);
+    result = (leftEqual && values >= min || !leftEqual && values > min) && (rightEqual && values <= max || !rightEqual && values < max);
   }
-  return pass;
+  return result;
 }
 
 var apiCheckers = {};
@@ -745,36 +760,31 @@ var apiCheckers = {};
  * @static Validator.is
  * 优先级： api.checkers > defaults.checkers
  * @param {String} ruleName
- * @param {String} value
+ * @param {Array|String} values
  * @return {Boolean} is or not
  */
-var is = Validator.is = function(ruleName, value) {
-  var checker = apiCheckers[ruleName] || defaultCheckers[ruleName];
-  var result;
-  switch(getType(checker)) {
-    case TYPE_ARRAY:
-      result = calculateRules.call(this, checker, value, true);
-      break;
-    case TYPE_FUNCTION:
-      result = checker(value);
-      break;
-    default:
-      throw new TypeError('Checker for ' + ruleName + ' is not defined.');
-  }
-  return result;
+var is = Validator.is = function(ruleName, values) {
+  return executeChecker.call(null, ruleName, values, true);
 };
 
 /**
  * @static Validator.not
  * @param {String} ruleName
- * @param {String} testString
+ * @param {Array|String} values
  * @return {Boolean} is or not
  */
-var not = Validator.not = function(ruleName, value) {
-  return !is(ruleName, value);
+var not = Validator.not = function(ruleName, values) {
+  return matrix.not(is(ruleName, values));
 };
 
 // TODO: 增加Validator.any(),Validator.all()
+var any = Validator.any = function(ruleName, values) {
+  return matrix.any(is(ruleName, values));
+};
+
+var all = Validator.all = function(ruleName, values) {
+  return matrix.all(is(ruleName, values));
+};
 
 /**
  * This helper helps to regist default checkers, `is` api and `not` api
@@ -786,35 +796,35 @@ function registDefaultCheckers(name, matcher) {
   var callback;
   switch(getType(matcher)) {
     case TYPE_REGEXP:
-      // value may be an array or string
-      // TODO:如果传入数组，就返回布尔数组
-      // 如果是字符串，就返回布尔值
       callback = function(value) {
-        var pass;
+        var result;
         if (isArray(value)) {
-          pass = true;
+          result = [];
           for (var i = 0; i < value.length; ++i) {
-            if (!matcher.test(value[i])) {
-              pass = false;
-              break;
-            }
+            result.push(matcher.test(value[i]));
           }
         } else {
-          pass = matcher.test(value);
+          result = matcher.test(value);
         }
-        return pass;
+        return result;
       };
       break;
     case TYPE_FUNCTION:
       callback = matcher;
       break;
     default:
-      throw new TypeError('Matcher Type Error.');
+      throw new TypeError('Default Matcher Type Error.');
   }
   defaultCheckers[name] = callback;
   is[name] = callback;
   not[name] = function() {
-    return !callback.apply(null, arguments);
+    return matrix.not(callback.apply(null, arguments));
+  };
+  all[name] = function() {
+    return matrix.all(callback.apply(null, arguments));
+  };
+  any[name] = function() {
+    return matrix.any(callback.apply(null, arguments));
   };
 }
 
@@ -830,7 +840,6 @@ for (var m in defaultMatchers) {
  * checker可以是字符串，正则表达式，或者函数
  * 当checker是字符串时，表示基于内建规则组合（表达式）的新规则
  * 当checker是正则表达式时，表示一条规则，它必须通过该正则表达式的完全匹配
- * TODO: 当checker是函数时，该函数的返回值必须是布尔型或者布尔矩阵
  * This function may throw a `TypeError` if checker's type is not support.
  */
 function registApiChecker(type, checker) {
@@ -844,31 +853,30 @@ function registApiChecker(type, checker) {
       try {
         queue = parseRules(checker);
       } catch(err) {
+        console.error('无法解析的条件表达式');
         throw new Error(err);
       }
       callback = queue;
       break;
     case TYPE_REGEXP:
       callback = function(value) {
-        var pass = true;
+        var result;
         if (isArray(value))  {
+          result = [];
           for (var i = 0; i < value.length; ++i) {
-            if (!checker.test(value[i])) {
-              pass = false;
-              break;
-            }
+            result.push(checker.test(value[i]));
           }
         } else {
-          pass = checker.test(value);
+          result = checker.test(value);
         }
-        return pass;
+        return result;
       }
       break;
     case TYPE_FUNCTION:
       callback = checker;
       break;
     default:
-      throw new TypeError('Checker must be a String/RegExp/Function.');
+      throw new TypeError('API Checker Type Error.');
   }
   apiCheckers[type] = callback;
 }

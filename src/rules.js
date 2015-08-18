@@ -77,59 +77,49 @@ function equal(values) {
 
 /**
  * defaults.checkers: empty check
- * TODO: 引入布尔矩阵运算
  * @param {String|Array} values
  * @return {Boolean|Array} 如果传入数组，就返回布尔数组；如果传入字符串，就返回布尔值
  */
 function empty(values) {
-  var pass;
+  var result;
   if (isArray(values)) {
-    pass = true;
+    result = [];
     for (var i = 0; i < values.length; ++i) {
-      if (!isEmpty(values[i])) {
-        pass = false;
-        break;
-      }
+      result.push(isEmpty(values[i]));
     }
   } else {
-    pass = isEmpty(values);
+    result = isEmpty(values);
   }
-  return pass;
+  return result;
 }
 
 /**
  * defaults.checkers: length check
- * TODO: 引入布尔矩阵运算
  * @param {Array|String} values
  * @param {Number} min
  * @param {Number} max
  * @return {Array|Boolean} 如果传入数组，就返回布尔矩阵；如果传入字符串，就返回布尔值
  */
 function long(values, min, max) {
-  var pass, length;
+  var result, length;
   min = min || -Infinity;
   max = max || Infinity;
   if (isArray(values)) {
-    pass = true;
+    result = [];
     for (var i = 0; i < values.length; ++i) {
       length = values[i].length;
-      if (length < min || length > max) {
-        pass = false;
-        break;
-      }
+      result.push(length >= min && length <= max);
     }
   } else {
     length = values.length;
-    pass = length >= min && length <= max;
+    result = length >= min && length <= max;
   }
-  return pass;
+  return result;
 }
 
 /**
  * defaults.check: number range check
  * 这个函数和long类似，但是不是用来限制长度的，而是用来限制数值本身的
- * HACK: 这个函数的五个参数缺一不可
- * HACK: values应该转成Number型，因为参数很可能是字符串，可能会引起判断错误
  * @param {Array|String} values
  * @param {Boolean} leftEqual 是否大于等于
  * @param {Number} min
@@ -138,19 +128,16 @@ function long(values, min, max) {
  * @return {Array|Boolean} 如果传入数组，就返回布尔矩阵；否则就返回布尔值
  */
 function range(values, leftEqual, min, max, rightEqual) {
-  var pass;
+  var result;
   if (isArray(values)) {
-    pass = true;
+    result = [];
     for (var i = 0; i < values.length; ++i) {
       var value = Number(values[i]);
-      if (leftEqual && value < min || rightEqual && value > max || !leftEqual && value <= min || !rightEqual && value >= max) {
-        pass = false;
-        break;
-      }
+      result.push((leftEqual && value >= min || !leftEqual && value > min) && (rightEqual && value <= max || !rightEqual && value < max));
     }
   } else {
     values = Number(values);
-    pass = (leftEqual && values >= min || !leftEqual && values > min) && (rightEqual && values <= max || !rightEqual && values < max);
+    result = (leftEqual && values >= min || !leftEqual && values > min) && (rightEqual && values <= max || !rightEqual && values < max);
   }
-  return pass;
+  return result;
 }
