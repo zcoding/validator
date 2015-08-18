@@ -154,7 +154,7 @@ FormValidator重写了`.check`方法，并且支持只有表单才具备的验�
 {
   field: ['fieldA']
   rule: {
-    type: 'checked',
+    if: 'checked',
     fail: function() {
       this.classList.add('error');
       alert('fieldA必须勾选');
