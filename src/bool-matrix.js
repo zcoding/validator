@@ -68,4 +68,6 @@ var matrix = (function() {
     return result;
   };
 
+  return mat;
+
 })();

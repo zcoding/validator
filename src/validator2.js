@@ -22,7 +22,7 @@ function parseValidations(validations) {
     for (var j = 0; j < rules.length; ++j) {
       var rj = rules[j];
       var _r = {};
-      _r.if = parseRules(rj.if);
+      _r.if = parseConditionExpression(rj.if);
       _r.no = !rj['fail'] ? false : rj.fail;
       _r.yes = !rj['success'] ? false : parseValidations(rj.success);
       r.rs.push(_r);
@@ -42,11 +42,10 @@ function setRule(name, rule) {
       break;
     case TYPE_STRING:
       try {
-        callback = parseRules(checker);
+        callback = parseConditionExpression(checker);
       } catch(error) {
-        throw new Error("Cannot parse rule expression.");
+        throw new Error("Cannot parse condition expression.");
       }
-
       break;
     case TYPE_REGEXP:
       callback = function(values) {
@@ -112,28 +111,33 @@ vprtt.remove = function(rules) {
   return this
 };
 
-/**
- * @method .check()
- * @return {Boolean} pass or not
- */
-vprtt.check = function() {
+function deepCheck(validations) {
   var pass = true;
-  var validations = this.vs;
   for (var i = 0; i < validations.length; ++i) {
     var vi = validations[i];
     var vfs = vi.fs, vrs = vi.rs;
     for (var j = 0; j < vrs.length; ++j) {
       var rj = vrs[j];
-      pass = calculateRules.call(this, rj.if, vfs, false);
+      pass = calculateConditionExpression.call(this, rj.if, vfs, false);
       if (!pass) {
         var context = vfs.length < 2 ? vfs[0] : vfs;
         if (rj.no) {
           rj.no.call(context);
         }
         break;
+      } else if (rj.yes) {
+        pass = deepCheck.call(this, rj.yes);
       }
     }
     if (!pass) break;
   }
   return pass;
+}
+
+/**
+ * @method .check()
+ * @return {Boolean} pass or not
+ */
+vprtt.check = function() {
+  return deepCheck.call(this, this.vs);
 };
