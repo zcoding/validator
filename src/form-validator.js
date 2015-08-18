@@ -7,40 +7,24 @@
  * TODO: 增加对checkbox,radio的支持
  */
 var FormValidator = function(formOrSelector, validations) {
-  this.vs = [];
-  this.cs = {};
-  if (typeof formOrSelector === 'string') {
-    this.$form = document.querySelectorAll(formOrSelector)[0]; // TODO: querySelectorAll兼容性
-  } else {
-    this.$form = formOrSelector;
-  }
   validations = validations || [];
-  if (!isArray(validations)) {
-    validations = [validations];
-  }
-  for (var i = 0, len = validations.length; i < len; ++i) {
-    var fields = validations[i].field;
-    if (!isArray(fields)) {
-      fields = [fields];
-    }
+  this.$form = getType(formOrSelector) === TYPE_STRING ? document.querySelectorAll(formOrSelector)[0] : formOrSelector;
+  this.cs = {};
+  var self = this;
+  this.vs = parseValidations(validations, function(fields) {
+    if (!fields) return fields;
     var $fields = [];
-    for (var j = 0; j < fields.length; ++j) {
-      var $field = this.$form.querySelectorAll('[name=' + fields[j] + ']')[0] || this.$form.querySelectorAll('[data-name=' + fields[j] + ']')[0]; // TODO: querySelectorAll兼容性
-      if (typeof $field === TYPE_UNDEFINED) {
-        throw new TypeError('未找到域：' + fields[j]);
+    if (isArray(fields)) {
+      for (var i = 0; i < fields.length; ++i) {
+        var $field = self.$form.querySelectorAll('[name=' + fields[i] + ']')[0] || self.$form.querySelectorAll('[data-name=' + fields[i] + ']')[0]
+        $fields.push($field);
       }
+    } else {
+      var $field = self.$form.querySelectorAll('[name=' + fields + ']')[0] || self.$form.querySelectorAll('[data-name=' + fields + ']')[0];
       $fields.push($field);
     }
-    var rules = validations[i].rules;
-    rules = isArray(rules) ? rules : [rules];
-    for (var k = 0; k < rules.length; ++k) {
-      rules[k].queue = parseRules(rules[k].type);
-    }
-    this.vs.push({
-      $fs: $fields,
-      rs: rules
-    });
-  }
+    return $fields;
+  });
 };
 
 FormValidator.prototype = new Validator();

@@ -6,75 +6,48 @@ var rename = require('gulp-rename');
 var zip = require('gulp-zip');
 var config = require('./package.json');
 
-var source = ['intro', 'query', 'utils', 'validator', 'rules', 'api', 'extend', 'form-validator', 'outro'];
-var source2 = ['intro', 'bool-matrix', 'utils2', 'validator2', 'rules', 'api', 'extend', 'form-validator', 'outro'];
+var source = ['bool-matrix', 'utils', 'validator', 'rules', 'api', 'extend', 'form-validator', 'exports'];
 
-var sourcePath = source.map(function(file) {
-  return 'src/' + file + '.js';
-});
+var moduleTypes = ['global', 'amd', 'cmd', 'commonjs'];
 
-var sourcePath2 = source2.map(function(file) {
-  return 'src/' + file + '.js';
-});
-
-// 根据不同的模块规范生成单独的文件（不再在一个文件中判断使用哪种规范）
-var moduleTypes = ['amd', 'cmd', 'commonjs', 'es6'];
+var sources = {
+  "global": ['intro'].concat(source).concat(['outro']),
+  "amd": ['intro-amd'].concat(source).concat(['outro']),
+  "cmd": ['intro-cmd'].concat(source).concat(['outro']),
+  "commonjs": source
+};
 
 moduleTypes.forEach(function(mType) {
 
+  var source = sources[mType];
+  var sourcePath = source.map(function(file) {
+    return './src/' + file + '.js';
+  });
+
   gulp.task('build-' + mType, function() {
-    var srcFiles = ['intro-' + mType].concat(sourcePath);
-    return gulp.src(srcFiles)
-            .pipe(concat('validator-' + mType + '.js', {newLine: '\n'}))
+    return gulp.src(sourcePath)
+            .pipe(concat('validator.js', {newLine: '\n'}))
             .pipe(gulp.dest('build/' + mType))
             .pipe(sourcemaps.init())
             .pipe(uglify())
-            .pipe(rename('validator-' + mType + '.min.js'))
+            .pipe(rename('validator.min.js'))
             .pipe(sourcemaps.write('.'))
             .pipe(gulp.dest('build/' + mType));
   });
 
 });
 
-gulp.task('build2', function() {
-
-  return gulp.src(sourcePath2)
-    .pipe(concat('spa-public-validator2.js', {newLine: '\n'}))
-    .pipe(gulp.dest('build'))
-    .pipe(sourcemaps.init())
-    .pipe(uglify())
-    .pipe(rename('spa-public-validator2.min.js'))
-    .pipe(sourcemaps.write('.'))
-    .pipe(gulp.dest('build'));
-
+gulp.task('build', ['build-global', 'build-amd', 'build-cmd', 'build-commonjs'], function() {
+  console.log('All built.');
 });
 
-gulp.task('build', function() {
+gulp.task('dev', ['build-global'], function() {
 
-  return gulp.src(sourcePath)
-    .pipe(concat('spa-public-validator.js', {newLine: '\n'}))
-    .pipe(gulp.dest('build'))
-    .pipe(sourcemaps.init())
-    .pipe(uglify())
-    .pipe(rename('spa-public-validator.min.js'))
-    .pipe(sourcemaps.write('.'))
-    .pipe(gulp.dest('build'));
-
-});
-
-gulp.task('dev', ['build'], function() {
-
-  var watcher = gulp.watch(sourcePath, ['build']);
-
-  watcher.on('change', function(event) {
-    console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
+  var path = sources['global'].map(function(file) {
+    return './src/' + file + '.js';
   });
 
-});
-
-gulp.task('dev2', ['build2'], function() {
-
-  var watcher = gulp.watch(sourcePath2, ['build2']);
+  var watcher = gulp.watch(path, ['build-global']);
 
   watcher.on('change', function(event) {
     console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
@@ -84,7 +57,7 @@ gulp.task('dev2', ['build2'], function() {
 
 gulp.task('release', function() {
 
-  gulp.src(['src/*', 'scripts/*', 'build/*', 'gulpfile.js', 'LICENSE', 'package.json', 'README.md'], {base: '.'})
+  gulp.src(['src/*', 'scripts/*', 'build/*', 'demo/*', 'gulpfile.js', 'LICENSE', 'package.json', 'README.md'], {base: '.'})
     .pipe(zip('validator-' + config.version + '.zip'))
     .pipe(gulp.dest('release'));
 

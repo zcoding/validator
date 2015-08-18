@@ -1,14 +1,11 @@
-var rules = require('./rules');
+var Validator = require('../build/commonjs/validator').Validator;
 
-var emails = [
-  'wuzijie_1991@163.com',
-  'a.b.c.d.e.f.g@h.i'
-];
+console.log(Validator.is.empty(['notEmpty', '']));
+console.log(Validator.is.empty(''));
 
-emails.forEach(function(email) {
-  if (rules['email'].test(email)) {
-    console.log('Valid Email: ' + email);
-  } else {
-    console.log('Invalid Email: ' + email);
-  }
-});
+console.log(Validator.is('empty', 'shit'));
+console.log(Validator.is('empty', ['notEmpty', '']));
+
+console.log(Validator.all('empty', ['shit', '']));
+console.log(Validator.any('empty', ['yes', '']));
+console.log(Validator.not('empty', ''));

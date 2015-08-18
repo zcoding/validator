@@ -6,79 +6,86 @@
 function Validator(validations) {
   validations = validations || [];
   this.cs = {};
-  this.vs = [];
-  if (!isArray(validations)) {
-    validations = [validations];
-  }
+  this.vs = parseValidations(validations);
+}
+
+function parseValidations(validations, getField) {
+  validations = getType(validations) === TYPE_ARRAY ? validations : [validations];
+  var v = [];
   for (var i = 0; i < validations.length; ++i) {
-    var fields = validations[i].field;
-    if (!isArray(fields)) {
-      fields = [fields];
+    var vi = validations[i];
+    var r = {};
+    var $field = getField ? getField(vi['field']) : vi['field'];
+    r.fs = !$field ? null : (isArray($field) ? $field : [$field]);
+    r.rs = [];
+    var rules = isArray(vi.rules) ? vi.rules : [vi.rules];
+    for (var j = 0; j < rules.length; ++j) {
+      var rj = rules[j];
+      var _r = {};
+      _r.if = parseConditionExpression(rj.if);
+      _r.no = !rj['fail'] ? false : rj.fail;
+      _r.yes = !rj['success'] ? false : parseValidations(rj.success);
+      r.rs.push(_r);
     }
-    var rules = validations[i].rules;
-    rules = isArray(rules) ? rules : [rules];
-    for (var k = 0; k < rules.length; ++k) {
-      rules[k].queue = parseRules(rules[k].type);
-    }
-    this.vs.push({
-      $fs: fields,
-      rs: rules
-    });
+    v.push(r);
   }
-};
+  return v;
+}
+
+function setRule(name, rule) {
+  var checker = rule;
+  var callback;
+  switch (getType(checker)) {
+    case TYPE_BOOLEAN:
+    case TYPE_FUNCTION:
+      callback = checker;
+      break;
+    case TYPE_STRING:
+      try {
+        callback = parseConditionExpression(checker);
+      } catch(error) {
+        throw new Error("Cannot parse condition expression.");
+      }
+      break;
+    case TYPE_REGEXP:
+      callback = function(values) {
+        var pass = true;
+        if (isArray(values)) {
+          for (var i = 0, len = values.length; i < len; ++i) {
+            if (!checker.test(values[i])) {
+              pass = false;
+              break;
+            }
+          }
+        } else {
+          if (!rule.rule.test(values)) {
+            pass = false;
+          }
+        }
+        return pass;
+      };
+      break;
+    default:
+      throw new TypeError('Rule type not support.');
+  }
+  this.cs[name] = callback;
+}
+
+function removeRule(rule) {
+  if (typeof this.cs[rule] !== TYPE_UNDEFINED) {
+    delete this.cs[rule];
+  }
+}
 
 var vprtt = Validator.prototype;
 
 /**
  * @method .add(rules)
- * 添加自定义规则
  * @param {Object} rules
  * @return this
- * this.checkers可以是函数，或者checker表达式队列
+ * @description 添加自定义规则，可以是正则，函数或者规则表达式
  */
 vprtt.add = function(rules) {
-  function setRule(name, rule) {
-    var checker = rule;
-    var callback;
-    switch (getType(checker)) {
-      case TYPE_FUNCTION:
-        callback = checker;
-        break;
-      case TYPE_STRING:
-        // 解析规则，生成的是一个后缀表达式
-        // 可以使用defaultCheckers或者apiCheckers
-        // 此处不直接生成checker函数，而是把表达式解析成后缀形式（队列存储），在验证的时候（执行.check()时）再执行表达式运算
-        try {
-          callback = parseRules(checker);
-        } catch(error) {
-          throw new Error("Cannot parse rule expression.");
-        }
-
-        break;
-      case TYPE_REGEXP:
-        callback = function(values) {
-          var pass = true;
-          if (isArray(values)) {
-            for (var i = 0, len = values.length; i < len; ++i) {
-              if (!checker.test(values[i])) {
-                pass = false;
-                break;
-              }
-            }
-          } else {
-            if (!rule.rule.test(values)) {
-              pass = false;
-            }
-          }
-          return pass;
-        };
-        break;
-      default:
-        throw new TypeError('Rule type not support.');
-    }
-    this.cs[name] = callback;
-  }
-
   for (var name in rules) {
     if (hasOwn.call(rules, name)) {
       setRule.call(this, name, rules[name]);
@@ -88,48 +95,51 @@ vprtt.add = function(rules) {
 };
 
 /**
- * @method .check()
- * @return {Boolean} pass or not
- */
-vprtt.check = function(obj) {
-  var pass = true;
-  var validations = this.vs;
-  for (var i = 0; i < validations.length; ++i) {
-    var $fields = validations[i].$fs;
-    var rules = validations[i].rs;
-    for (var j = 0; j < rules.length; ++j) {
-      var rule = rules[j];
-      // 现在开始解析后缀表达式
-      pass = calculateRules.call(this, rule.queue, $fields, false);
-      if (!pass) {
-        var context = $fields.length < 2 ? $fields[0] : $fields;
-        rule.fail.call(context, obj);
-        break;
-      }
-    }
-    if (!pass) break;
-  }
-  return pass;
-};
-
-/**
  * @method .remove(rules)
- * 移除自定义规则
  * @param {Array|String} rules
  * @return this
+ * @description 删除自定义规则
  */
 vprtt.remove = function(rules) {
-  function removeRule(rule) {
-    if (typeof this.cs[rule] !== TYPE_UNDEFINED) {
-      delete this.cs[rule];
-    }
-  }
   if (isArray(rules)) {
-    for (var i = 0, len = rules.length; i < len; ++i) {
+    for (var i = 0; i < rules.length; ++i) {
       removeRule.call(this, rules[i]);
     }
   } else {
     removeRule.call(this, rules);
   }
-  return this;
+  return this
+};
+
+function deepCheck(validations) {
+  var pass = true;
+  for (var i = 0; i < validations.length; ++i) {
+    var vi = validations[i];
+    var vfs = vi.fs, vrs = vi.rs;
+    for (var j = 0; j < vrs.length; ++j) {
+      var rj = vrs[j];
+      var _pass = calculateConditionExpression.call(this, rj.if, vfs, false);
+      _pass = matrix.val(_pass);
+      if (!_pass) {
+        var context = vfs.length < 2 ? vfs[0] : vfs;
+        if (rj.no) {
+          pass = false;
+          rj.no.call(context);
+        }
+        break;
+      } else if (rj.yes) {
+        pass = deepCheck.call(this, rj.yes);
+      }
+    }
+    if (!pass) break;
+  }
+  return pass;
+}
+
+/**
+ * @method .check()
+ * @return {Boolean} pass or not
+ */
+vprtt.check = function() {
+  return deepCheck.call(this, this.vs);
 };

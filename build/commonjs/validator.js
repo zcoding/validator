@@ -1,7 +1,3 @@
-(function(factory) {
-    factory(window);
-}(function(exports) {
-
 /**
  * 布尔矩阵运算辅助函数
  */
@@ -475,14 +471,15 @@ function Validator(validations) {
   this.vs = parseValidations(validations);
 }
 
-function parseValidations(validations) {
+function parseValidations(validations, getField) {
   validations = getType(validations) === TYPE_ARRAY ? validations : [validations];
   var v = [];
   for (var i = 0; i < validations.length; ++i) {
     var vi = validations[i];
     var r = {};
-    var fieldType = getType(vi['field']);
-    r.fs = !vi['field'] ? null : (fieldType === TYPE_ARRAY ? vi.field : [vi.field]);
+    var $field = getField ? getField(vi['field']) : vi['field'];
+    var fieldType = getType($field);
+    r.fs = !$field ? null : (fieldType === TYPE_ARRAY ? $field : [$field]);
     r.rs = [];
     var rules = getType(vi.rules) === TYPE_ARRAY ? vi.rules : [vi.rules];
     for (var j = 0; j < rules.length; ++j) {
@@ -913,40 +910,13 @@ Validator.api.list = function() {
  * TODO: 增加对checkbox,radio的支持
  */
 var FormValidator = function(formOrSelector, validations) {
-  this.vs = [];
-  this.cs = {};
-  if (typeof formOrSelector === 'string') {
-    this.$form = document.querySelectorAll(formOrSelector)[0]; // TODO: querySelectorAll兼容性
-  } else {
-    this.$form = formOrSelector;
-  }
   validations = validations || [];
-  if (!isArray(validations)) {
-    validations = [validations];
-  }
-  for (var i = 0, len = validations.length; i < len; ++i) {
-    var fields = validations[i].field;
-    if (!isArray(fields)) {
-      fields = [fields];
-    }
-    var $fields = [];
-    for (var j = 0; j < fields.length; ++j) {
-      var $field = this.$form.querySelectorAll('[name=' + fields[j] + ']')[0] || this.$form.querySelectorAll('[data-name=' + fields[j] + ']')[0]; // TODO: querySelectorAll兼容性
-      if (typeof $field === TYPE_UNDEFINED) {
-        throw new TypeError('未找到域：' + fields[j]);
-      }
-      $fields.push($field);
-    }
-    var rules = validations[i].rules;
-    rules = isArray(rules) ? rules : [rules];
-    for (var k = 0; k < rules.length; ++k) {
-      rules[k].queue = parseRules(rules[k].type);
-    }
-    this.vs.push({
-      $fs: $fields,
-      rs: rules
-    });
-  }
+  this.$form = getType(formOrSelector) === TYPE_STRING ? document.querySelectorAll(formOrSelector)[0] : formOrSelector;
+  this.cs = {};
+  var self = this;
+  this.vs = parseValidations(validations, function(selector) {
+    return self.$form.querySelectorAll(selector)[0];
+  });
 };
 
 FormValidator.prototype = new Validator();
@@ -962,9 +932,6 @@ FormValidator.prototype.check = function() {
   return Validator.prototype.check.call(this, this.$form);
 };
 
-
 exports.Validator = Validator;
 
 exports.FormValidator = FormValidator;
-
-}));

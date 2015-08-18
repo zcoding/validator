@@ -8,9 +8,8 @@ var TYPE_STRING = '[object String]'
   , TYPE_ARRAY = '[object Array]'
   , TYPE_FUNCTION = '[object Function]'
   , TYPE_REGEXP = '[object RegExp]'
+  , TYPE_BOOLEAN = '[object Boolean]'
   , TYPE_UNDEFINED = 'undefined';
-
-var utils = {};
 
 /**
  * Utils: Get Object Type
@@ -22,9 +21,9 @@ function getType(obj) {
 };
 
 // HACK: 验证的时候，不作trim处理
-utils.trim = function(str) {
-  return str.replace(/^\s+|\s$/g, '');
-};
+// function trim(str) {
+//   return str.replace(/^\s+|\s$/g, '');
+// }
 
 /**
  * Utils: isArray
@@ -50,7 +49,13 @@ function isFunction(obj) {
  * @return {String} value of htmlElement
  */
 function getValue(htmlElement) {
-  return htmlElement.value || htmlElement.getAttribute('data-value') || '';
+  if (typeof htmlElement['value'] !== TYPE_UNDEFINED) {
+    return htmlElement.value || '';
+  } else if (typeof htmlElement['getAttribute'] !== TYPE_UNDEFINED) {
+    return htmlElement.getAttribute('data-value') || '';
+  } else {
+    return htmlElement || '';
+  }
 }
 
 /**
@@ -58,7 +63,7 @@ function getValue(htmlElement) {
  * @param {String} paramString
  * @return {Array} params
  */
-utils.getLengthParams = function(paramString) {
+function getLengthParams(paramString) {
   var errorString = 'The parameters for length is illegal.';
   paramString = paramString[0]; // HACK: 假设只有一个参数
   var matcher = /\s*([\(\[])\s*(\d+)?\s*,\s*(\d+)?\s*([\)\]])\s*/; // 如果没有最小限制，最小限制为0；如果没有最大限制，最大限制为Infinite
@@ -98,7 +103,7 @@ utils.getLengthParams = function(paramString) {
  * @throws {TypeError} 'The parameters for range is illegal.'
  * TODO: 类似length规则
  */
-utils.getRangeParams = function(paramString) {
+function getRangeParams(paramString) {
   var errorString = 'The parameters for range is illegal.';
   paramString = paramString[0];
   var matcher = /\s*([\(\[])\s*((0|([\+\-]?[1-9]\d*))(\.[0-9]+)?)?\s*,\s*((0|([\+\-]?[1-9]\d*))(\.[0-9]+)?)?\s*([\)\]])\s*/; // 如果没有最小限制，最小限制为负无穷；如果没有最大限制，最大限制为正无穷
@@ -133,13 +138,14 @@ function priority(v1, v2) {
 }
 
 /**
- * parse rules
- * 解析规则字符串，获取规则名称，规则参数，与或非逻辑
- * 用花括号表示分组，因为小括号和中括号已经作为参数有用
+ * parse rules 解析条件表达式，保存后缀队列
+ * 条件表达式由两个部分组成
+ * 1. 运算符 `&&`, `||`, `!`, `{`, `}`
+ * 2. 规则字符串
  * @param {String} ruleString
  * @return {Array} rules
  */
-function parseRules(ruleString) { // 假设输入为： "{A||!B}&&C"
+function parseConditionExpression(ruleString) { // 假设输入为： "{A||!B}&&C"
   var wordQueue = []; // 词队列
   var exQueue = []; // 后缀表达式队列
   var opStack = []; // 操作符栈
@@ -227,7 +233,6 @@ function parseRules(ruleString) { // 假设输入为： "{A||!B}&&C"
       j--
     }
   }
-  // console.log('转成后缀：' + exQueue);
   return exQueue;
 }
 
@@ -237,28 +242,26 @@ function parseRules(ruleString) { // 假设输入为： "{A||!B}&&C"
  * @param {Array} values
  * @param {Boolean} isApi
  * @return {Boolean} result
- * TODO:所有的checker都将传入一个values数组作为参数，但是返回值不同，可能返回布尔矩阵（数组），或者布尔值
  */
-function execFn(type, values, isApi) {
+function executeChecker(type, values, isApi) {
   var parts = type.split(':');
   type = parts[0].replace(/length/i, 'long');
   var checker = isApi ? apiCheckers[type] || defaultCheckers[type] : this.cs[type] || apiCheckers[type] || defaultCheckers[type];
 
   var result;
   switch(getType(checker)) {
-    // checker可能不是函数，checker可能是由另外一些规则组成的表达式，所以要继续计算
     case TYPE_ARRAY:
-      result = calculateRules.call(this, checker, values, isApi);
+      result = calculateConditionExpression.call(this, checker, values, isApi);
       break;
     case TYPE_FUNCTION:
       var params;
       var _params = parts.slice(1);
       switch (type) {
         case 'long':
-          params = utils.getLengthParams(_params);
+          params = getLengthParams(_params);
           break;
         case 'range':
-          params = utils.getRangeParams(_params);
+          params = getRangeParams(_params);
           break;
         default:
           params = _params;
@@ -267,27 +270,36 @@ function execFn(type, values, isApi) {
         params.unshift(values);
       } else {
         var _values  = [];
-        for (var k = 0; k < values.length; ++k) {
-          _values.push(getValue(values[k]));
+        if (values !== null) {
+          for (var k = 0; k < values.length; ++k) {
+            _values.push(getValue(values[k]));
+          }
         }
         params.unshift(_values);
       }
       result = checker.apply(null, params);
       break;
+    case TYPE_BOOLEAN:
+      result = checker;
+      break;
     default:
-      throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
+      if (type === 'all') {
+        var queue = parseConditionExpression(parts.slice(1));
+        result = matrix.val(calculateConditionExpression.call(this, queue, values, isApi));
+      } else {
+        throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
+      }
   }
   return result;
 }
 
 /**
- * 执行后缀表达式运算
+ * 计算条件表达式（必须是已经解析成后缀表达式）
  * @param {Array} ruleQueue
  * @param {Array} values
  * @return {Boolean} result
- * TODO: 使用基于矩阵（数组）的与或非运算
  */
-function calculateRules(ruleQueue, values, isApi) {
+function calculateConditionExpression(ruleQueue, values, isApi) {
 
   var ruleStack = [];
   for (var k = 0; k < ruleQueue.length; ++k) {
@@ -296,18 +308,22 @@ function calculateRules(ruleQueue, values, isApi) {
       case '&&':
         var s2 = ruleStack.pop()
           , s1 = ruleStack.pop();
-        var result = (getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1) && (getType(s2) === TYPE_STRING ? execFn.call(this, s2, values, isApi) : s2);
+        var result1 = getType(s1) === TYPE_STRING ? executeChecker.call(this, s1, values, isApi) : s1;
+        var result2 = getType(s2) === TYPE_STRING ? executeChecker.call(this, s2, values, isApi) : s2;
+        var result = matrix.and(result1, result2);
         ruleStack.push(result);
         break;
       case '||':
         var s2 = ruleStack.pop()
           , s1 = ruleStack.pop();
-        var result = (getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1) || (getType(s2) === TYPE_STRING ? execFn.call(this, s2, values, isApi) : s2);
+        var result1 = getType(s1) === TYPE_STRING ? executeChecker.call(this, s1, values, isApi) : s1;
+        var result2 = getType(s2) === TYPE_STRING ? executeChecker.call(this, s2, values, isApi) : s2;
+        var result = matrix.or(result1, result2);
         ruleStack.push(result);
         break;
       case '!':
         var s1 = ruleStack.pop();
-        var result = !(getType(s1) === TYPE_STRING ? execFn.call(this, s1, values, isApi) : s1);
+        var result = matrix.not(getType(s1) === TYPE_STRING ? executeChecker.call(this, s1, values, isApi) : s1);
         ruleStack.push(result);
         break;
       default:
@@ -315,6 +331,6 @@ function calculateRules(ruleQueue, values, isApi) {
     }
   }
   var pop = ruleStack.pop();
-  return getType(pop) === TYPE_STRING ? execFn.call(this, pop, values, isApi) : pop;
+  return getType(pop) === TYPE_STRING ? executeChecker.call(this, pop, values, isApi) : pop;
 
 }

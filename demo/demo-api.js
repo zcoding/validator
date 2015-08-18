@@ -32,7 +32,7 @@ var myForm = document.getElementById('checkMe');
 var checkMe = new FormValidator(myForm, [{
   field: 'name',
   rules: {
-    type: 'kname||length:(,20)&&email', // 注意这是用api规则和内置规则组合成的规则，实际规则应该是： QQ || length:(3,5) && nickName || url || length:(,20) && email
+    if: 'kname||length:(,20)&&email', // 注意这是用api规则和内置规则组合成的规则，实际规则应该是： QQ || length:(3,5) && nickName || url || length:(,20) && email
     fail: function() {
       this.classList.add('error');
       alert('昵称不符合');
@@ -42,9 +42,6 @@ var checkMe = new FormValidator(myForm, [{
 
 checkMe.add({
   kname: 'sname||url' // 注意这是一个用API规则和内置规则组合成的实例规则
-  // 这里会把sname解析为 ['QQ', 'length:(3,5)', 'nickName', '&&' '||']，这样执行check的时候就不用再解析了
-  // TODO: 现在不支持用API规则定义API规则，所以只需要解析一次
-  // 假设有一个自定义规则，由API规则和内置规则组成，在添加的时候就已经把它完全转换为内置规则或者一个函数
 });
 
 myForm.addEventListener('submit', function(event) {

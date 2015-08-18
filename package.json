@@ -1,9 +1,10 @@
 {
   "name": "spa-public-validator",
-  "version": "0.4.7",
+  "version": "1.0.0",
   "description": "spa public validator module",
   "main": "index.js",
   "scripts": {
+    "start": "gulp dev",
     "test": "node scripts/test.js",
     "build": "gulp build"
   },

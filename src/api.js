@@ -95,7 +95,7 @@ function registApiChecker(type, checker) {
       // 此处不直接生成checker函数，而是把表达式解析成后缀形式（队列存储），在验证的时候（执行.check()或者Validator.is()/Validator.not()时）再执行表达式运算
       var queue;
       try {
-        queue = parseRules(checker);
+        queue = parseConditionExpression(checker);
       } catch(err) {
         console.error('无法解析的条件表达式');
         throw new Error(err);
