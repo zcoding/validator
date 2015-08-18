@@ -13,17 +13,26 @@ var matrix = (function() {
    * 求或
    * mat1 = [true, false], mat2 = [false, true], mat1 || mat2 = [true, true]
    * mat1 = [true, false], mat2 = false, mat1 || mat2 = [true, false]
+   * mat1 = false, mat2 = [true, false], mat1 || mat2 = [true, false]
+   * mat1 = true, mat2 = false, mat1 || mat2 = true
    */
   mat.or = function(mat1, mat2) {
     var newMatrix = [];
-    if (isArray(mat2)) {
+    var t1 = isArray(mat1), t2 = isArray(mat2);
+    if (t1 && t2) {
       for (var i = 0; i < mat1.length; ++i) {
         newMatrix[i] = mat1[i] || mat2[i];
       }
-    } else {
+    } else if (t1) {
       for (var i = 0; i < mat1.length; ++i) {
         newMatrix[i] = mat1[i] || mat2;
       }
+    } else if (t2) {
+      for (var i = 0; i < mat2.length; ++i) {
+        newMatrix[i] = mat2[i] || mat1;
+      }
+    } else {
+      newMatrix = mat1 || mat2;
     }
     return newMatrix;
   };
@@ -32,42 +41,60 @@ var matrix = (function() {
    * 求与
    * mat1 = [true, false], mat2 = [false, true], mat1 && mat2 = [false, false]
    * mat1 = [true, false], mat2 = false, mat1 && mat2 = [false, false]
+   * mat1 = false, mat2 = [true, false], mat1 && mat2 = [false, false]
+   * mat1 = true, mat2 = false, mat1 && mat2 = false
    */
   mat.and = function(mat1, mat2) {
     var newMatrix = [];
-    if (isArray(mat2)) {
+    var t1 = isArray(mat1), t2 = isArray(mat2);
+    if (t1 && t2) {
       for (var i = 0; i < mat1.length; ++i) {
         newMatrix[i] = mat1[i] && mat2[i];
       }
-    } else {
+    } else if (t1) {
       for (var i = 0; i < mat1.length; ++i) {
         newMatrix[i] = mat1[i] && mat2;
       }
+    } else if (t2) {
+      for (var i = 0; i < mat2.length; ++i) {
+        newMatrix[i] = mat2[i] && mat1;
+      }
+    } else {
+      newMatrix = mat1 && mat2;
     }
     return newMatrix;
   };
 
   /**
    * 求反
-   * mat1 = [true, false], !mat1 = [false, true]
+   * mat = [true, false], !mat = [false, true]
+   * mat = true, !mat = false
    */
-  mat.not = function(mat1) {
+  mat.not = function(mat) {
     var newMatrix = [];
-    for (var i = 0; i < mat1.length; ++i) {
-      newMatrix[i] = !mat1[i];
+    if (isArray(mat)) {
+      for (var i = 0; i < mat.length; ++i) {
+        newMatrix[i] = !mat[i];
+      }
+    } else {
+      newMatrix = !mat;
     }
     return newMatrix;
   };
 
   /**
    * 求值
-   * mat1 = [true, false], return false
-   * mat1 = [true, true], return true
+   * mat = [true, false], return false
+   * mat = true, return true
    */
-  mat.val = function(mat1) {
+  mat.val = function(mat) {
     var result = true;
-    for (var i = 0; i < mat1.length; ++i) {
-      result &= mat1[i];
+    if (isArray(mat)) {
+      for (var i = 0; i < mat.length; ++i) {
+        result = result && mat[i];
+      }
+    } else {
+      result = result && mat;
     }
     return result;
   };
@@ -323,7 +350,6 @@ function executeChecker(type, values, isApi) {
 
   var result;
   switch(getType(checker)) {
-    // checker可能是条件表达式，要继续计算
     case TYPE_ARRAY:
       result = calculateConditionExpression.call(this, checker, values, isApi);
       break;
@@ -344,8 +370,10 @@ function executeChecker(type, values, isApi) {
         params.unshift(values);
       } else {
         var _values  = [];
-        for (var k = 0; k < values.length; ++k) {
-          _values.push(getValue(values[k]));
+        if (values !== null) {
+          for (var k = 0; k < values.length; ++k) {
+            _values.push(getValue(values[k]));
+          }
         }
         params.unshift(_values);
       }
@@ -370,7 +398,6 @@ function executeChecker(type, values, isApi) {
  * @param {Array} ruleQueue
  * @param {Array} values
  * @return {Boolean} result
- * TODO: 使用基于矩阵（数组）的与或非运算
  */
 function calculateConditionExpression(ruleQueue, values, isApi) {
 
@@ -381,7 +408,6 @@ function calculateConditionExpression(ruleQueue, values, isApi) {
       case '&&':
         var s2 = ruleStack.pop()
           , s1 = ruleStack.pop();
-        // 用布尔矩阵运算，注意短路优化
         var result1 = getType(s1) === TYPE_STRING ? executeChecker.call(this, s1, values, isApi) : s1;
         var result2 = getType(s2) === TYPE_STRING ? executeChecker.call(this, s2, values, isApi) : s2;
         var result = matrix.and(result1, result2);
@@ -405,7 +431,8 @@ function calculateConditionExpression(ruleQueue, values, isApi) {
     }
   }
   var pop = ruleStack.pop();
-  return getType(pop) === TYPE_STRING ? executeChecker.call(this, pop, values, isApi) : pop;
+  var expressionResult = getType(pop) === TYPE_STRING ? executeChecker.call(this, pop, values, isApi) : pop;
+  return matrix.val(expressionResult);
 
 }
 
@@ -529,10 +556,12 @@ function deepCheck(validations) {
     var vfs = vi.fs, vrs = vi.rs;
     for (var j = 0; j < vrs.length; ++j) {
       var rj = vrs[j];
-      pass = calculateConditionExpression.call(this, rj.if, vfs, false);
-      if (!pass) {
+      var _pass = calculateConditionExpression.call(this, rj.if, vfs, false);
+      _pass = matrix.val(_pass);
+      if (!_pass) {
         var context = vfs.length < 2 ? vfs[0] : vfs;
         if (rj.no) {
+          pass = false;
           rj.no.call(context);
         }
         break;

@@ -118,10 +118,12 @@ function deepCheck(validations) {
     var vfs = vi.fs, vrs = vi.rs;
     for (var j = 0; j < vrs.length; ++j) {
       var rj = vrs[j];
-      pass = calculateConditionExpression.call(this, rj.if, vfs, false);
-      if (!pass) {
+      var _pass = calculateConditionExpression.call(this, rj.if, vfs, false);
+      _pass = matrix.val(_pass);
+      if (!_pass) {
         var context = vfs.length < 2 ? vfs[0] : vfs;
         if (rj.no) {
+          pass = false;
           rj.no.call(context);
         }
         break;

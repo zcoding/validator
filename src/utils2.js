@@ -245,7 +245,6 @@ function executeChecker(type, values, isApi) {
 
   var result;
   switch(getType(checker)) {
-    // checker可能是条件表达式，要继续计算
     case TYPE_ARRAY:
       result = calculateConditionExpression.call(this, checker, values, isApi);
       break;
@@ -266,8 +265,10 @@ function executeChecker(type, values, isApi) {
         params.unshift(values);
       } else {
         var _values  = [];
-        for (var k = 0; k < values.length; ++k) {
-          _values.push(getValue(values[k]));
+        if (values !== null) {
+          for (var k = 0; k < values.length; ++k) {
+            _values.push(getValue(values[k]));
+          }
         }
         params.unshift(_values);
       }
@@ -292,7 +293,6 @@ function executeChecker(type, values, isApi) {
  * @param {Array} ruleQueue
  * @param {Array} values
  * @return {Boolean} result
- * TODO: 使用基于矩阵（数组）的与或非运算
  */
 function calculateConditionExpression(ruleQueue, values, isApi) {
 
@@ -303,7 +303,6 @@ function calculateConditionExpression(ruleQueue, values, isApi) {
       case '&&':
         var s2 = ruleStack.pop()
           , s1 = ruleStack.pop();
-        // 用布尔矩阵运算，注意短路优化
         var result1 = getType(s1) === TYPE_STRING ? executeChecker.call(this, s1, values, isApi) : s1;
         var result2 = getType(s2) === TYPE_STRING ? executeChecker.call(this, s2, values, isApi) : s2;
         var result = matrix.and(result1, result2);
@@ -327,6 +326,7 @@ function calculateConditionExpression(ruleQueue, values, isApi) {
     }
   }
   var pop = ruleStack.pop();
-  return getType(pop) === TYPE_STRING ? executeChecker.call(this, pop, values, isApi) : pop;
+  var expressionResult = getType(pop) === TYPE_STRING ? executeChecker.call(this, pop, values, isApi) : pop;
+  return matrix.val(expressionResult);
 
 }
