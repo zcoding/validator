@@ -78,23 +78,6 @@ var matrix = (function() {
     return newMatrix;
   };
 
-  /**
-   * 求值
-   * mat = [true, false], return false
-   * mat = true, return true
-   */
-  mat.val = function(mat) {
-    var result = true;
-    if (isArray(mat)) {
-      for (var i = 0; i < mat.length; ++i) {
-        result = result && mat[i];
-      }
-    } else {
-      result = result && mat;
-    }
-    return result;
-  };
-
   mat.all = function(mat) {
     var result = true;
     if (isArray(mat)) {

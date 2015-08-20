@@ -20,11 +20,6 @@ function getType(obj) {
   return Object.prototype.toString.call(obj);
 };
 
-// HACK: 验证的时候，不作trim处理
-// function trim(str) {
-//   return str.replace(/^\s+|\s$/g, '');
-// }
-
 /**
  * Utils: isArray
  * @param {Object} obj
@@ -101,7 +96,6 @@ function getLengthParams(paramString) {
  * @param {String} paramString
  * @return {Array} params
  * @throws {TypeError} 'The parameters for range is illegal.'
- * TODO: 类似length规则
  */
 function getRangeParams(paramString) {
   var errorString = 'The parameters for range is illegal.';
@@ -130,7 +124,9 @@ function getRangeParams(paramString) {
 var priorityTable = {
   "||": 0,
   "&&": 1,
-  "!": 2
+  "!": 2,
+  "*": 2,
+  "?": 2
 };
 
 function priority(v1, v2) {
@@ -140,7 +136,7 @@ function priority(v1, v2) {
 /**
  * parse rules 解析条件表达式，保存后缀队列
  * 条件表达式由两个部分组成
- * 1. 运算符 `&&`, `||`, `!`, `{`, `}`
+ * 1. 运算符 `&&`, `||`, `!`, `*`, `?`, `{`, `}`
  * 2. 规则字符串
  * @param {String} ruleString
  * @return {Array} rules
@@ -157,6 +153,8 @@ function parseConditionExpression(ruleString) { // 假设输入为： "{A||!B}&&
       case '{':
       case '}':
       case '!':
+      case '*':
+      case '?':
         if (word.length > 0) {
           wordQueue.push(word);
         }
@@ -196,6 +194,8 @@ function parseConditionExpression(ruleString) { // 假设输入为： "{A||!B}&&
       case '||':
       case '&&':
       case '!':
+      case '*':
+      case '?':
         j = opStack.length - 1;
         while(j >= 0 && (opStack[j] === '||' ||  opStack[j] === '&&' || opStack[j] === '!')) {
           if (priority(opStack[j], c)) { // 如果栈顶操作符优先级比较大或相等，就出栈
@@ -283,12 +283,7 @@ function executeChecker(type, values, isApi) {
       result = checker;
       break;
     default:
-      if (type === 'all') {
-        var queue = parseConditionExpression(parts.slice(1));
-        result = matrix.val(calculateConditionExpression.call(this, queue, values, isApi));
-      } else {
-        throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
-      }
+      throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
   }
   return result;
 }
@@ -324,6 +319,16 @@ function calculateConditionExpression(ruleQueue, values, isApi) {
       case '!':
         var s1 = ruleStack.pop();
         var result = matrix.not(getType(s1) === TYPE_STRING ? executeChecker.call(this, s1, values, isApi) : s1);
+        ruleStack.push(result);
+        break;
+      case '*':
+        var s1 = ruleStack.pop();
+        var result = matrix.all(getType(s1) === TYPE_STRING ? executeChecker.call(this, s1, values, isApi) : s1);
+        ruleStack.push(result);
+        break;
+      case "?":
+        var s1 = ruleStack.pop();
+        var result = matrix.any(getType(s1) === TYPE_STRING ? executeChecker.call(this, s1, values, isApi) : s1);
         ruleStack.push(result);
         break;
       default:
