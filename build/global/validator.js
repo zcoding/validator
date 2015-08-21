@@ -95,7 +95,7 @@ var matrix = (function() {
   };
 
   mat.any = function(mat) {
-    var result = true;
+    var result = false;
     if (isArray(mat)) {
       for (var i = 0; i < mat.length; ++i) {
         result = result || mat[i];
@@ -242,7 +242,7 @@ var priorityTable = {
 };
 
 function priority(v1, v2) {
-  return priorityTable[v1] >= priorityTable[v2];
+  return priorityTable[v1] > priorityTable[v2] || priorityTable[v1] === priorityTable[v2] && !(/^(\*|\?|!)$/g.test(v1)) && !(/^(\*|\?|!)$/g.test(v2));
 }
 
 /**
@@ -309,8 +309,10 @@ function parseConditionExpression(ruleString) { // 假设输入为： "{A||!B}&&
       case '*':
       case '?':
         j = opStack.length - 1;
-        while(j >= 0 && (opStack[j] === '||' ||  opStack[j] === '&&' || opStack[j] === '!')) {
-          if (priority(opStack[j], c)) { // 如果栈顶操作符优先级比较大或相等，就出栈
+        while(j >= 0 && (/^(\*|\?|\|\||&&|!)$/g.test(opStack[j]))) {
+           // 1.如果栈顶操作符优先级比较大，就出栈
+           // 2.如果栈顶操作符优先级相等，且非单目运算符，就出栈
+          if (priority(opStack[j], c)) {
             exQueue.push(opStack.pop());
           } else {
             break;

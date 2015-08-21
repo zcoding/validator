@@ -48,7 +48,7 @@ var validations = {
     success: {
       field: [getField('A1'), getField('A2'), getField('A3'), getField('B1'), getField('B2'), getField('B3')],
       rules: {
-        if: '!*empty',
+        if: '?!empty',
         fail: function() {
           alert('A,B不能同时为空');
         },

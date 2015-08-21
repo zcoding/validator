@@ -19,12 +19,18 @@ spa-public-validator是一个无依赖的、基于配置的表单验证模块。
 
 ### 条件表达式
 `if`通过条件表达式定义了某个层级的验证规则，条件表达式由三个部分组成：
-+ 运算符`&&`,`||`,`!`,`{`,`}`
++ 运算符`&&`,`||`,`!`,`*`,`?`,`{`,`}`
 + 规则字符串
-+ 特殊标识`any:`,`all:`
 
-### 规则字符串
-规则字符串是用于描述一个规则的表达式，有两种描述形式：
+关于运算符
+1. `&&`表示逻辑与，`||`表示逻辑或，`!`表示逻辑非
+2. `*`表示全部满足，会执行`matrix.all`运算
+3. `?`表示存在一个满足，会执行`matrix.any`运算
+4. 优先级：`!` = `*` = `?` > `&&` > `||`
+5. 使用大括号可以提升优先级
+6. `!,*,?`是单目运算符，结合性从右到左
+
+规则字符串是用于描述一个规则的表达式，有两种描述形式
 1. `规则名称`
 2. `规则名称:参数列表`
 
@@ -72,7 +78,7 @@ spa-public-validator是一个无依赖的、基于配置的表单验证模块。
 {
   field: [$A, $B]
   rules: {
-    if: '!all:empty',
+    if: '!*empty',
     fail: function() {
       var fields = this; // 注意：此时的this是一个数组，按照field的顺序
       for (var i = 0; i < fields.length; ++i) {
@@ -131,16 +137,7 @@ Validator.api({
 });
 // 添加实例规则
 validator.add({
-  notAllEmpty: function(values) { // 需要的规则是：不是全部为空时通过（返回true），全部为空时不通过（返回false）
-    var notAllEmpty = false;
-    for (var i = 0, len = values.length; i < len; ++i) {
-      if (Validator.is.empty(values[i])) {
-        notAllEmpty = true;
-        break;
-      }
-    }
-    return notAllEmpty;
-  }
+  browser: /chrome|ie|firfox|opera|safari/i
 });
 // 实例规则只能在条件表达式中使用，而API规则除了在条件表达式中使用之外，还可以通过`Validator.is`,`Validator.not`,`Validator.all`,`Validator.any`等方式调用
 ```
@@ -246,25 +243,7 @@ FormValidator在初始化配置的时候需要传表单元素，并通过name或
 + `Validator.is.ipv6`
 
 ### `Validator.not[type]`
-仅限内置规则的使用，除了`is:something`和`not:something`
-+ `Validator.not.url`
-+ `Validator.not.email`
-+ `Validator.not.number`
-+ `Validator.not.int`
-+ `Validator.not.positive`
-+ `Validator.not.negative`
-+ `Validator.not.varName`
-+ `Validator.not.nickName`
-+ `Validator.not.QQ`
-+ `Validator.not.upperCase`
-+ `Validator.not.lowerCase`
-+ `Validator.not.empty`
-+ `Validator.not.equal`
-+ `Validator.not.long`
-+ `Validator.not.range`
-+ `Validator.not.ip`
-+ `Validator.not.ipv4`
-+ `Validator.not.ipv6`
+类似`Validator.is`
 
 ### `Validator.api`
 这个方法在Validator底层添加验证规则
@@ -299,7 +278,7 @@ Validator.not.something = function(value) {
 ```
 
 ## 不喜欢基于配置的方式？
-如果不喜欢这种基于配置的方法，可以直接使用`Validator.is`/`Validator.not`/`Validator.api`这三个API进行验证，这样的好处是更加灵活，以及处理很多其它无法配置的验证规则。
+如果不喜欢这种基于配置的方法，可以直接使用`Validator.is`,`Validator.not`,`Validator.api`这三个API进行验证，这样的好处是更加灵活，以及处理很多其它无法配置的验证规则。
 
 ## 利用API为Validator模块写插件
 ### 自定义API

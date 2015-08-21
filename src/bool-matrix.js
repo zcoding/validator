@@ -91,7 +91,7 @@ var matrix = (function() {
   };
 
   mat.any = function(mat) {
-    var result = true;
+    var result = false;
     if (isArray(mat)) {
       for (var i = 0; i < mat.length; ++i) {
         result = result || mat[i];
