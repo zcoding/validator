@@ -21,7 +21,6 @@ var not = Validator.not = function(ruleName, values) {
   return matrix.not(is(ruleName, values));
 };
 
-// TODO: 增加Validator.any(),Validator.all()
 var any = Validator.any = function(ruleName, values) {
   return matrix.any(is(ruleName, values));
 };
