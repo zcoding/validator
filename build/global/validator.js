@@ -645,6 +645,33 @@ var defaultMatchers = {
   , long: long
   // 数值大小限制
   , range: range
+
+  , is: function(values, something) {
+    var result;
+    if (isArray(values)) {
+      result = [];
+      for (var i = 0; i < values.length; ++i) {
+        result.push(values[i] === something);
+      }
+    } else {
+      result = values === something;
+    }
+    return result;
+  }
+
+  , not: function(values, something) {
+    var result;
+    if (isArray(values)) {
+      result = [];
+      for (var i = 0; i < values.length; ++i) {
+        result.push(values[i] !== something);
+      }
+    } else {
+      result = values !== something;
+    }
+    return result;
+  }
+
 };
 
 /**
@@ -659,7 +686,6 @@ function isEmpty(value) {
 
 /**
  * defaults.checkers: equal check
- * TODO: 引入布尔矩阵运算
  * @param {Array} values
  * @return {Boolean} equal or not
  */
@@ -767,7 +793,6 @@ var not = Validator.not = function(ruleName, values) {
   return matrix.not(is(ruleName, values));
 };
 
-// TODO: 增加Validator.any(),Validator.all()
 var any = Validator.any = function(ruleName, values) {
   return matrix.any(is(ruleName, values));
 };

@@ -1,91 +1,133 @@
 // 配置需要验证的规则
 var validationConfig = [
+  // {
+  //   field: 'name',
+  //   rules: [{                           // 两个规则，按先后顺序验证
+  //     if: '!empty',                   // 验证类型：非空
+  //     fail: function() {           // 验证失败回调
+  //       this.classList.add('error');
+  //       alert('昵称不能为空');
+  //     }
+  //   }, {
+  //     if: 'length:(5,12]',            // 验证类型：长度限制在6到12个字符
+  //     fail: normalFail('昵称6到12个中/英文字符')
+  //   }]
+  // }, {
+  //   field: 'password',
+  //   rules: [{
+  //     if: '!empty',
+  //     fail: function() {
+  //       this.classList.add('error');
+  //       alert('密码不能为空');
+  //     }
+  //   }, {
+  //     if: 'length:[8,20]',
+  //     fail: function() {            // fail回调带一个参数form，表示当前的表单;上下文(this)为对应的元素;
+  //       this.classList.add('error');
+  //       alert('密码8到20位');
+  //     }
+  //   }, {
+  //     if: 'specialChar',              // 自定义的规则，必须先定义后使用，否则会抛出TypeError异常
+  //     fail: normalFail('密码只能包含英文字母/数字')
+  //   }]
+  // }, {
+  //   field: ['password', 'password2'],
+  //   rules: {
+  //     if: 'equal',
+  //     fail: function() {
+  //       this.forEach(function(field) {
+  //         field.classList.add('error');
+  //       });
+  //       alert('两次密码不匹配');
+  //     }
+  //   }
+  // }, {
+  //   field: 'age',
+  //   rules: [{
+  //     if: 'int',
+  //     fail: function() {
+  //       this.classList.add('error');
+  //       alert('年龄必须为整数');
+  //     }
+  //   }, {
+  //     if: 'range:[20,)',
+  //     fail: function() {
+  //       this.classList.add('error');
+  //       alert('您的年龄未符合要求（20岁及以上）');
+  //     }
+  //   }]
+  // }, {
+  //   field: ['email', 'address'],
+  //   rules: {
+  //     if: '!all:empty',
+  //     fail: function() {
+  //       var fields = this;
+  //       for (var i = 0, len = fields.length; i < len; ++i) {
+  //         fields[i].classList.add('error');
+  //       }
+  //       alert('EMAIL和Address不能同时为空');
+  //     }
+  //   }
+  // }, {
+  //   field: 'email',
+  //   rules: {
+  //     if: 'email',
+  //     fail: function() {
+  //       this.classList.add('error');
+  //       alert('电子邮件格式错误');
+  //     }
+  //   }
+  // }, {
+  //   field: 'content',
+  //   rules: {
+  //     if: 'length:(20,)&&url||length:(9, 20]', // 组合规则：10到20个字符（任意），或者20个字符以上（必须是url格式）
+  //     fail: function() {
+  //       this.classList.add('error');
+  //       alert('content长度不符合要求或者格式错误');
+  //     }
+  //   }
+  // },
   {
-    field: 'name',
-    rules: [{                           // 两个规则，按先后顺序验证
-      if: '!empty',                   // 验证类型：非空
-      fail: function() {           // 验证失败回调
-        this.classList.add('error');
-        alert('昵称不能为空');
-      }
-    }, {
-      if: 'length:(5,12]',            // 验证类型：长度限制在6到12个字符
-      fail: normalFail('昵称6到12个中/英文字符')
-    }]
-  }, {
-    field: 'password',
+    field: 'favourite',
     rules: [{
-      if: '!empty',
+      if: 'checked:(books)', // 只选了books
       fail: function() {
-        this.classList.add('error');
-        alert('密码不能为空');
+        alert('只能选books');
       }
     }, {
-      if: 'length:[8,20]',
-      fail: function() {            // fail回调带一个参数form，表示当前的表单;上下文(this)为对应的元素;
-        this.classList.add('error');
-        alert('密码8到20位');
+      if: 'checked:(books, movie)', // 只选了books和movie
+      fail: function() {
+        alert('只选books和movie');
       }
     }, {
-      if: 'specialChar',              // 自定义的规则，必须先定义后使用，否则会抛出TypeError异常
-      fail: normalFail('密码只能包含英文字母/数字')
+      if: 'checked:[books, movie]', // 选了books或者movie中的一个或两个
+      fail: function() {
+        alert('选了books或者movie中的一个或两个');
+      }
+    }, {
+      if: 'checked:()', // 一个都没选（只要选了就是不通过）
+      fail: function() {
+        alert('一个都不能选');
+      }
+    }, {
+      if: 'checked:[]', //
+      fail: function() {}
     }]
-  }, {
-    field: ['password', 'password2'],
-    rules: {
-      if: 'equal',
-      fail: function() {
-        this.forEach(function(field) {
-          field.classList.add('error');
-        });
-        alert('两次密码不匹配');
-      }
-    }
-  }, {
-    field: 'age',
+  },
+
+  {
+    field: 'howmuch',
     rules: [{
-      if: 'int',
+      if: 'checked:(24)', // 只选了24
       fail: function() {
-        this.classList.add('error');
-        alert('年龄必须为整数');
+        alert('必选24');
       }
     }, {
-      if: 'range:[20,)',
+      if: 'checked:[24, 36]', // 选了24或者36，任意一个或两个（因为是radio，这里只能是一个）
       fail: function() {
-        this.classList.add('error');
-        alert('您的年龄未符合要求（20岁及以上）');
+        alert('选了24或者36');
       }
     }]
-  }, {
-    field: ['email', 'address'],
-    rules: {
-      if: '!all:empty',
-      fail: function() {
-        var fields = this;
-        for (var i = 0, len = fields.length; i < len; ++i) {
-          fields[i].classList.add('error');
-        }
-        alert('EMAIL和Address不能同时为空');
-      }
-    }
-  }, {
-    field: 'email',
-    rules: {
-      if: 'email',
-      fail: function() {
-        this.classList.add('error');
-        alert('电子邮件格式错误');
-      }
-    }
-  }, {
-    field: 'content',
-    rules: {
-      if: 'length:(20,)&&url||length:(9, 20]', // 组合规则：10到20个字符（任意），或者20个字符以上（必须是url格式）
-      fail: function() {
-        this.classList.add('error');
-        alert('content长度不符合要求或者格式错误');
-      }
-    }
   }
 
 ];

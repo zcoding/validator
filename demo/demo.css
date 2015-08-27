@@ -3,10 +3,12 @@ html, body, div {
   padding: 0;
 }
 
+html {
+  font-size: 62.5%;
+}
+
 body {
-  font-family: Consolas;
-  font-size: 14px;
-  line-height: 1.1em;
+  font: normal normal 1.4rem/1.1 Consolas,"microsoft yahei";
 }
 
 .container {
@@ -24,50 +26,47 @@ body {
 }
 
 .form-group {
+  position: relative;
   display: block;
   margin: 10px;
   padding: 0;
 }
 
-.form-group label {
+.form-group>label {
+  position: absolute;
   display: block;
-  float: left;
   width: 150px;
   height: 30px;
+  left: 0;
+  top: 0;
   line-height: 30px;
   text-align: right;
-  colro: #333;
+  color: #333;
 }
 
-.form-group input {
-  display: inline-block;
+.form-group input[type=text], .form-group input[type=password], .form-group textarea, .form-group select {
+  display: block;
   width: 768px;
-  margin-left: 10px;
+  margin-left: 160px;
   padding: 2px 2px 2px 8px;
   text-align: left;
-  height: 24px;
   line-height: 30px;
   border: 1px solid #ddd;
   border-radius: 5px;
   outline: none;
-  font-family: Consolas "Microsoft YaHei";
   color: #888;
+}
+
+.form-group input[type=text], .form-group input[type=password] {
+  height: 24px;
 }
 
 .form-group textarea {
-  display: inline-block;
-  width: 768px;
-  max-width: 768px;
-  margin-left: 10px;
-  padding: 2px 2px 2px 8px;
-  text-align: left;
-  line-height: 30px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  outline: none;
-  font-family: Consolas "Microsoft YaHei";
-  color: #888;
   resize: none;
+}
+
+.form-group select {
+  height: 30px;
 }
 
 .error {
@@ -93,4 +92,53 @@ body {
 .button:active {
   background: #888;
   color: #eee;
+}
+
+.form-group .checkbox, .form-group .radio {
+  display: inline-block;
+  margin-right: 10px;
+  height: 30px;
+  line-height: 30px;
+}
+
+.form-group .checkbox input[type=checkbox] {
+  visibility: hidden;
+}
+
+.form-group .checkbox label {
+  position: relative;
+}
+
+.form-group .checkbox label::before {
+  content: '';
+  display: block;
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: -24px;
+  top: 0;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  background: #fff;
+}
+
+.form-group .checkbox label::after {
+  content: '√';
+  display: none;
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: -24px;
+  top: 0;
+  font-weight: bold;
+  line-height: 18px;
+  padding-left: 5px;
+}
+
+.form-group .checkbox input[type=checkbox]:checked+label::after {
+  display: block;
+}
+
+.form-group label+.checkbox, .form-group label+.radio {
+  margin-left: 164px;
 }
