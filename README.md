@@ -146,24 +146,15 @@ validator.add({
 ## Validator VS FormValidator
 FormValidator是Validator的一个子类，它们的不同之处包括但不限于以下几点：
 ### 支持的验证规则不同
-FormValidator重写了`.check`方法，并且支持只有表单才具备的验证条件，例如
-```javascript
-// 假设fieldA是一个checkbox或者radio
-{
-  field: ['fieldA']
-  rule: {
-    if: 'checked',
-    fail: function() {
-      this.classList.add('error');
-      alert('fieldA必须勾选');
-    }
-  }
-}
-```
+FormValidator重写了`.check`方法，支持只有表单才具备的规则，包括
+
+1. `checked`规则，适用于checkbox和radio
+2. `selected`规则，适用于select
+
 ### 初始化配置不同
 FormValidator在初始化配置的时候需要传表单元素，并通过name或者data-name属性获取表单元素。而Validator在初始化配置的时候每个配置内都需要元素实例
 
-### 关于FormValidator中的`checked`规则详解
+### FormValidator中的`checked`规则详解
 `checked`规则适用于checkbox或者radio类型的表单。以checkbox为例，对于某个表单（有A,B,C三个候选值），可能遇到以下几个验证场景：
 
 1. 只选了A
@@ -176,10 +167,17 @@ FormValidator在初始化配置的时候需要传表单元素，并通过name或
 8. 只要选了A和B中的一个或两个
 9. 一个都没选
 10. 全选了
+11. 只是没选A
+12. 只是没选A,B
+13. 只要没选A
+14. 只要没选A,B
 
 更复杂的：
 
 + A,B中必选一个（且只能选一个），同时选了C
+
+### FormValidator中的`selected`规则详解
+`selected`规则适用于select类型的表单
 
 ## 内建规则
 ### `is:something`
