@@ -57,7 +57,7 @@ gulp.task('dev', ['build-global'], function() {
 
 gulp.task('release', function() {
 
-  gulp.src(['src/*', 'scripts/*', 'build/**/*', 'demo/*', 'index.js', 'gulpfile.js', 'LICENSE', 'package.json', 'README.md'], {base: '.'})
+  return gulp.src(['src/*', 'scripts/*', 'build/**/*', 'demo/*', 'index.js', 'gulpfile.js', 'LICENSE', 'package.json', 'README.md'], {base: '.'})
     .pipe(zip('validator-' + config.version + '.zip'))
     .pipe(gulp.dest('release'));
 

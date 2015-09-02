@@ -34,9 +34,3 @@ Promise.resolve($.ajax({ // 返回一个Promises/A+规范的Promise
 }, function failed() {
   // fail
 })
-
-
-// 关于all和any在条件表达式中的使用
-{
-  if: 'any:{length:(10,)&&url}||all:email'
-}

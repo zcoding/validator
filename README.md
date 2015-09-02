@@ -179,6 +179,30 @@ FormValidator在初始化配置的时候需要传表单元素，并通过name或
 ### FormValidator中的`selected`规则详解
 `selected`规则适用于select类型的表单
 
+### 集合型规则`include`详解
+
+```javascript
+{
+  if: 'include:(A, B)', // 包含了A和B
+  fail: function() {}
+}
+
+{
+  if: 'include:[A, B]', // 包含了A,B中的一个
+  fail: function() {}
+}
+
+{
+  if: 'include:[(A,B), C]', // 包含了A和B，或者包含了C
+  fail: function() {}
+}
+
+{
+  if: 'include:([A,B], C)', // 包含了A,B中的一个，且包含C
+  fail: function() {}
+}
+```
+
 ## 内建规则
 ### `is:something`
 + `{if: "is:whatiwant"}` 就是字符串"whatiwant"
