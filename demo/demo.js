@@ -90,42 +90,19 @@ var validationConfig = [
   {
     field: 'favourite',
     rules: [{
-      if: 'checked:(books)', // 只选了books
+      if: 'checked:books,movie', // 选了books和movie
       fail: function() {
         alert('只能选books');
       }
-    }, {
-      if: 'checked:(books, movie)', // 只选了books和movie
-      fail: function() {
-        alert('只选books和movie');
-      }
-    }, {
-      if: 'checked:[books, movie]', // 选了books或者movie中的一个或两个
-      fail: function() {
-        alert('选了books或者movie中的一个或两个');
-      }
-    }, {
-      if: 'checked:()', // 一个都没选（只要选了就是不通过）
-      fail: function() {
-        alert('一个都不能选');
-      }
-    }, {
-      if: 'checked:[]', //
-      fail: function() {}
     }]
   },
 
   {
     field: 'howmuch',
     rules: [{
-      if: 'checked:(24)', // 只选了24
+      if: 'checked:24', // 选了24
       fail: function() {
         alert('必选24');
-      }
-    }, {
-      if: 'checked:[24, 36]', // 选了24或者36，任意一个或两个（因为是radio，这里只能是一个）
-      fail: function() {
-        alert('选了24或者36');
       }
     }]
   }
