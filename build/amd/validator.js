@@ -85,23 +85,6 @@ var matrix = (function() {
     return newMatrix;
   };
 
-  /**
-   * 求值
-   * mat = [true, false], return false
-   * mat = true, return true
-   */
-  mat.val = function(mat) {
-    var result = true;
-    if (isArray(mat)) {
-      for (var i = 0; i < mat.length; ++i) {
-        result = result && mat[i];
-      }
-    } else {
-      result = result && mat;
-    }
-    return result;
-  };
-
   mat.all = function(mat) {
     var result = true;
     if (isArray(mat)) {
@@ -115,7 +98,7 @@ var matrix = (function() {
   };
 
   mat.any = function(mat) {
-    var result = true;
+    var result = false;
     if (isArray(mat)) {
       for (var i = 0; i < mat.length; ++i) {
         result = result || mat[i];
@@ -151,11 +134,6 @@ var TYPE_STRING = '[object String]'
 function getType(obj) {
   return Object.prototype.toString.call(obj);
 };
-
-// HACK: 验证的时候，不作trim处理
-// function trim(str) {
-//   return str.replace(/^\s+|\s$/g, '');
-// }
 
 /**
  * Utils: isArray
@@ -233,7 +211,6 @@ function getLengthParams(paramString) {
  * @param {String} paramString
  * @return {Array} params
  * @throws {TypeError} 'The parameters for range is illegal.'
- * TODO: 类似length规则
  */
 function getRangeParams(paramString) {
   var errorString = 'The parameters for range is illegal.';
@@ -262,17 +239,19 @@ function getRangeParams(paramString) {
 var priorityTable = {
   "||": 0,
   "&&": 1,
-  "!": 2
+  "!": 2,
+  "*": 2,
+  "?": 2
 };
 
 function priority(v1, v2) {
-  return priorityTable[v1] >= priorityTable[v2];
+  return priorityTable[v1] > priorityTable[v2] || priorityTable[v1] === priorityTable[v2] && !(/^(\*|\?|!)$/g.test(v1)) && !(/^(\*|\?|!)$/g.test(v2));
 }
 
 /**
  * parse rules 解析条件表达式，保存后缀队列
  * 条件表达式由两个部分组成
- * 1. 运算符 `&&`, `||`, `!`, `{`, `}`
+ * 1. 运算符 `&&`, `||`, `!`, `*`, `?`, `{`, `}`
  * 2. 规则字符串
  * @param {String} ruleString
  * @return {Array} rules
@@ -289,6 +268,8 @@ function parseConditionExpression(ruleString) { // 假设输入为： "{A||!B}&&
       case '{':
       case '}':
       case '!':
+      case '*':
+      case '?':
         if (word.length > 0) {
           wordQueue.push(word);
         }
@@ -328,9 +309,13 @@ function parseConditionExpression(ruleString) { // 假设输入为： "{A||!B}&&
       case '||':
       case '&&':
       case '!':
+      case '*':
+      case '?':
         j = opStack.length - 1;
-        while(j >= 0 && (opStack[j] === '||' ||  opStack[j] === '&&' || opStack[j] === '!')) {
-          if (priority(opStack[j], c)) { // 如果栈顶操作符优先级比较大或相等，就出栈
+        while(j >= 0 && (/^(\*|\?|\|\||&&|!)$/g.test(opStack[j]))) {
+           // 1.如果栈顶操作符优先级比较大，就出栈
+           // 2.如果栈顶操作符优先级相等，且非单目运算符，就出栈
+          if (priority(opStack[j], c)) {
             exQueue.push(opStack.pop());
           } else {
             break;
@@ -415,12 +400,7 @@ function executeChecker(type, values, isApi) {
       result = checker;
       break;
     default:
-      if (type === 'all') {
-        var queue = parseConditionExpression(parts.slice(1));
-        result = matrix.val(calculateConditionExpression.call(this, queue, values, isApi));
-      } else {
-        throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
-      }
+      throw new TypeError('Checker for rule ' + parts[0] + ' must be a Function.');
   }
   return result;
 }
@@ -458,6 +438,16 @@ function calculateConditionExpression(ruleQueue, values, isApi) {
         var result = matrix.not(getType(s1) === TYPE_STRING ? executeChecker.call(this, s1, values, isApi) : s1);
         ruleStack.push(result);
         break;
+      case '*':
+        var s1 = ruleStack.pop();
+        var result = matrix.all(getType(s1) === TYPE_STRING ? executeChecker.call(this, s1, values, isApi) : s1);
+        ruleStack.push(result);
+        break;
+      case "?":
+        var s1 = ruleStack.pop();
+        var result = matrix.any(getType(s1) === TYPE_STRING ? executeChecker.call(this, s1, values, isApi) : s1);
+        ruleStack.push(result);
+        break;
       default:
         ruleStack.push(exp);
     }
@@ -485,10 +475,9 @@ function parseValidations(validations, getField) {
     var vi = validations[i];
     var r = {};
     var $field = getField ? getField(vi['field']) : vi['field'];
-    var fieldType = getType($field);
-    r.fs = !$field ? null : (fieldType === TYPE_ARRAY ? $field : [$field]);
+    r.fs = !$field ? null : (isArray($field) ? $field : [$field]);
     r.rs = [];
-    var rules = getType(vi.rules) === TYPE_ARRAY ? vi.rules : [vi.rules];
+    var rules = isArray(vi.rules) ? vi.rules : [vi.rules];
     for (var j = 0; j < rules.length; ++j) {
       var rj = rules[j];
       var _r = {};
@@ -589,7 +578,7 @@ function deepCheck(validations) {
     for (var j = 0; j < vrs.length; ++j) {
       var rj = vrs[j];
       var _pass = calculateConditionExpression.call(this, rj.if, vfs, false);
-      _pass = matrix.val(_pass);
+      _pass = matrix.all(_pass);
       if (!_pass) {
         var context = vfs.length < 2 ? vfs[0] : vfs;
         if (rj.no) {
@@ -659,6 +648,33 @@ var defaultMatchers = {
   , long: long
   // 数值大小限制
   , range: range
+
+  , is: function(values, something) {
+    var result;
+    if (isArray(values)) {
+      result = [];
+      for (var i = 0; i < values.length; ++i) {
+        result.push(values[i] === something);
+      }
+    } else {
+      result = values === something;
+    }
+    return result;
+  }
+
+  , not: function(values, something) {
+    var result;
+    if (isArray(values)) {
+      result = [];
+      for (var i = 0; i < values.length; ++i) {
+        result.push(values[i] !== something);
+      }
+    } else {
+      result = values !== something;
+    }
+    return result;
+  }
+
 };
 
 /**
@@ -673,7 +689,6 @@ function isEmpty(value) {
 
 /**
  * defaults.checkers: equal check
- * TODO: 引入布尔矩阵运算
  * @param {Array} values
  * @return {Boolean} equal or not
  */
@@ -781,7 +796,6 @@ var not = Validator.not = function(ruleName, values) {
   return matrix.not(is(ruleName, values));
 };
 
-// TODO: 增加Validator.any(),Validator.all()
 var any = Validator.any = function(ruleName, values) {
   return matrix.any(is(ruleName, values));
 };
@@ -855,7 +869,7 @@ function registApiChecker(type, checker) {
       // 此处不直接生成checker函数，而是把表达式解析成后缀形式（队列存储），在验证的时候（执行.check()或者Validator.is()/Validator.not()时）再执行表达式运算
       var queue;
       try {
-        queue = parseRules(checker);
+        queue = parseConditionExpression(checker);
       } catch(err) {
         console.error('无法解析的条件表达式');
         throw new Error(err);
@@ -914,15 +928,26 @@ Validator.api.list = function() {
  * @extends Validator
  * @param {HTMLElement|String} formOrSelector
  * @param {Object|Array} validations
- * TODO: 增加对checkbox,radio的支持
+ * TODO: 增加对checkbox,radio,select的支持
  */
 var FormValidator = function(formOrSelector, validations) {
   validations = validations || [];
   this.$form = getType(formOrSelector) === TYPE_STRING ? document.querySelectorAll(formOrSelector)[0] : formOrSelector;
   this.cs = {};
   var self = this;
-  this.vs = parseValidations(validations, function(selector) {
-    return self.$form.querySelectorAll(selector)[0];
+  this.vs = parseValidations(validations, function(fields) {
+    if (!fields) return fields;
+    var $fields = [];
+    if (isArray(fields)) {
+      for (var i = 0; i < fields.length; ++i) {
+        var $field = self.$form.querySelectorAll('[name=' + fields[i] + ']')[0] || self.$form.querySelectorAll('[data-name=' + fields[i] + ']')[0]
+        $fields.push($field);
+      }
+    } else {
+      var $field = self.$form.querySelectorAll('[name=' + fields + ']')[0] || self.$form.querySelectorAll('[data-name=' + fields + ']')[0];
+      $fields.push($field);
+    }
+    return $fields;
   });
 };
 
@@ -933,7 +958,7 @@ FormValidator.prototype.constructor = FormValidator;
  * @method .check()
  * @override Validator.prototype.check()
  * @return {Boolean} pass or not
- * TODO: 增加对checkbox和radio的支持
+ * TODO: 增加对checkbox,radio,select的支持
  */
 FormValidator.prototype.check = function() {
   return Validator.prototype.check.call(this, this.$form);

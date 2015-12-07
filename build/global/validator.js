@@ -925,7 +925,7 @@ Validator.api.list = function() {
  * @extends Validator
  * @param {HTMLElement|String} formOrSelector
  * @param {Object|Array} validations
- * TODO: 增加对checkbox,radio的支持
+ * TODO: 增加对checkbox,radio,select的支持
  */
 var FormValidator = function(formOrSelector, validations) {
   validations = validations || [];
@@ -955,7 +955,7 @@ FormValidator.prototype.constructor = FormValidator;
  * @method .check()
  * @override Validator.prototype.check()
  * @return {Boolean} pass or not
- * TODO: 增加对checkbox和radio的支持
+ * TODO: 增加对checkbox,radio,select的支持
  */
 FormValidator.prototype.check = function() {
   return Validator.prototype.check.call(this, this.$form);
